@@ -42,9 +42,6 @@ export default function ExhibitionOverlay({ isOpen, onClose, items = [] }) {
             <span className="font-display font-medium uppercase text-sm sm:text-base tracking-[0.02em]">
               Exhibition & Archive
             </span>
-            <span className="hidden sm:inline font-sans text-xs text-ink-muted tracking-[0.12px]">
-              — Selected Series ({items.length})
-            </span>
           </div>
           <button
             type="button"

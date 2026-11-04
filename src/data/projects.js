@@ -34,8 +34,6 @@ export const aboutContent = {
     'Mit einer Leidenschaft für authentische Bilder, bei denen Momente gezeigt werden so wie sie sind – ehrlich und ohne Inszenierung.',
   body:
     'Mit einem klaren Blick für richtige Momente, Licht und Ausdruck arbeite ich analog inspiriert, aber modern umgesetzt – reduziert auf das Wesentliche.\n\nMeine Fotografie soll nicht nur festhalten, sondern eine Geschichte erzählen. In einer Zeit, in der so vieles inszeniert wirkt, liegt mein Fokus auf Authentizität.',
-  focus: ['Editorial', 'Portrait', 'Documentary', 'Licht & Raum'],
-  base: 'Düsseldorf / NRW & weltweit verfügbar',
 };
 
 export const exhibitionItems = [

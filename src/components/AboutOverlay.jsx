@@ -64,50 +64,27 @@ export default function AboutOverlay({ isOpen, onClose, identity, content }) {
           </div>
         </div>
 
-        {/* Minimal Information Grid */}
-        <div className="pt-12 border-t border-ink/15 grid grid-cols-1 sm:grid-cols-3 gap-10 font-sans text-xs tracking-[0.12px]">
-          {/* Contact */}
+        {/* Minimal Contact Line */}
+        <div className="pt-12 border-t border-ink/15 font-sans text-xs tracking-[0.12px]">
           <div className="space-y-2">
             <h3 className="font-display font-medium uppercase tracking-[0.02em] text-ink">
               Kontakt
             </h3>
-            <p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 pt-1">
               <a
                 href={`mailto:${identity.email}`}
-                className="text-ink-muted hover:text-ink transition-colors underline block"
+                className="text-ink-muted hover:text-ink transition-colors underline"
               >
                 {identity.email}
               </a>
-            </p>
-            <p>
+              <span className="hidden sm:inline text-ink/20">/</span>
               <a
                 href={`tel:${identity.phone}`}
-                className="text-ink-muted hover:text-ink transition-colors underline block"
+                className="text-ink-muted hover:text-ink transition-colors underline"
               >
                 {identity.phone}
               </a>
-            </p>
-          </div>
-
-          {/* Location & Focus */}
-          <div className="space-y-2">
-            <h3 className="font-display font-medium uppercase tracking-[0.02em] text-ink">
-              Standort & Einsatz
-            </h3>
-            <p className="text-ink-muted">{content.base}</p>
-            <p className="text-ink-muted">Ausbildung: Freiburg im Breisgau</p>
-          </div>
-
-          {/* Focus Areas */}
-          <div className="space-y-2">
-            <h3 className="font-display font-medium uppercase tracking-[0.02em] text-ink">
-              Schwerpunkte
-            </h3>
-            <ul className="text-ink-muted space-y-1">
-              {content.focus?.map((f) => (
-                <li key={f}>— {f}</li>
-              ))}
-            </ul>
+            </div>
           </div>
         </div>
       </div>
