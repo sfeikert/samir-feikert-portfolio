@@ -65,11 +65,14 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
 
     const st = stateRef.current;
 
+    let isVisible = true;
+
     const updateViewportMode = () => {
-      const isTouchOrSmall = window.matchMedia(
-        '(hover: none), (pointer: coarse), (max-width: 767px)'
+      // Respect accessibility preference for reduced motion
+      const prefersReducedMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)'
       ).matches;
-      st.autoDrift = !isTouchOrSmall;
+      st.autoDrift = !prefersReducedMotion;
     };
 
     const normalizePosition = () => {
@@ -106,6 +109,7 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          isVisible = entry.isIntersecting;
           const videos = track.querySelectorAll('video');
           videos.forEach((vid) => {
             if (entry.isIntersecting) {
@@ -128,7 +132,7 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
       const dtFrames = Math.min(2.5, Math.max(0.1, (now - prevTime) / 16.6667));
       prevTime = now;
 
-      if (!st.isDragging) {
+      if (isVisible && !st.isDragging) {
         if (Math.abs(st.momentumVel) > 0.02) {
           st.x += st.momentumVel * dtFrames * 14;
           st.momentumVel *= Math.pow(0.91, dtFrames);
