@@ -19,7 +19,13 @@ export const siteIdentity = {
   name: 'Samir Feikert',
   monogram: 'SAMIR FEIKERT',
   subtitle: 'Ausgebildeter Fotograf aus Düsseldorf',
-  email: 'kontakt@samirfeikert.de',
+  email: 'contact.samirfeikert@gmail.com',
+  phone: '+49 176 31501119',
+  address: {
+    street: 'Ruhrtalstraße 16',
+    city: '40233 Düsseldorf',
+    country: 'Deutschland',
+  },
 };
 
 export const galleryRows = [
