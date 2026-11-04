@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import LegalModal from './LegalModal.jsx';
 
-export default function ExhibitionOverlay({ isOpen, onClose, items = [] }) {
+export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [] }) {
   const [selectedItem, setSelectedItem] = useState(null);
+  const [activeLegal, setActiveLegal] = useState(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -115,7 +117,31 @@ export default function ExhibitionOverlay({ isOpen, onClose, items = [] }) {
               </div>
             ))}
           </div>
+
+          {/* Subtle Legal Links */}
+          <div className="mt-24 pt-8 border-t border-ink/10 flex items-center justify-end gap-6 font-sans text-xs text-ink-muted/70 tracking-[0.12px]">
+            <button
+              type="button"
+              onClick={() => setActiveLegal('imprint')}
+              className="hover:text-ink transition-colors cursor-pointer"
+            >
+              Imprint
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveLegal('privacy')}
+              className="hover:text-ink transition-colors cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+          </div>
         </div>
+
+        <LegalModal
+          activeLegal={activeLegal}
+          onClose={() => setActiveLegal(null)}
+          identity={identity}
+        />
       </motion.div>
 
       {/* Lightbox / Slideshow View */}

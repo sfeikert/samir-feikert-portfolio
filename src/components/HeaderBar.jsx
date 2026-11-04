@@ -160,6 +160,7 @@ export default function HeaderBar({ identity }) {
           <ExhibitionOverlay
             isOpen={true}
             onClose={() => setActiveOverlay(null)}
+            identity={identity}
             items={exhibitionItems}
           />
         )}
