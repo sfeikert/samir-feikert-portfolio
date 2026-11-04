@@ -270,6 +270,14 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
                 ? 'sf-align-bottom'
                 : 'sf-align-top';
 
+            // `aspect: 'auto'` (or no aspect) → frame follows the file's own
+            // dimensions, nothing gets cropped. A fixed ratio (e.g. '3 / 4')
+            // crops the media to that frame via object-cover.
+            const isAutoAspect = !slide.aspect || slide.aspect === 'auto';
+            const mediaClass = isAutoAspect
+              ? 'sf-media-auto'
+              : 'w-full h-full object-cover';
+
             return (
               <div
                 key={`${row.id}-${idx}`}
@@ -277,7 +285,7 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
               >
                 <div onClick={() => handleSlideClick(slide)} className="sf-media-card">
                   <div
-                    style={{ aspectRatio: slide.aspect || '4 / 5' }}
+                    style={isAutoAspect ? undefined : { aspectRatio: slide.aspect }}
                     className="w-full overflow-hidden bg-ink-tint"
                   >
                     {slide.type === 'video' ? (
@@ -288,7 +296,7 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
                         loop
                         playsInline
                         preload="metadata"
-                        className="w-full h-full object-cover"
+                        className={mediaClass}
                       />
                     ) : (
                       <img
@@ -296,7 +304,7 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
                         alt={slide.label || ''}
                         loading={rowIndex === 0 && idx < 6 ? 'eager' : 'lazy'}
                         decoding="async"
-                        className="w-full h-full object-cover"
+                        className={mediaClass}
                       />
                     )}
                   </div>

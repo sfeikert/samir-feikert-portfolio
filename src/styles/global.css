@@ -186,6 +186,15 @@
   max-height: calc(82vh - 5rem);
 }
 
+/* aspect: 'auto' → keep the file's native proportions, never crop */
+.sf-media-card .sf-media-auto,
+.sf-gallery-row:first-child .sf-media-card .sf-media-auto {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+}
+
 .sf-media-caption {
   padding-top: 0.75rem;
   font-family: 'Untitled Sans', 'Albert Sans', 'Inter', sans-serif;
