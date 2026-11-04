@@ -28,6 +28,85 @@ export const siteIdentity = {
   },
 };
 
+export const aboutContent = {
+  headline: 'Ich bin Samir, Fotograf mit Ausbildung in Freiburg und Sitz in Düsseldorf.',
+  lead:
+    'Mit einer Leidenschaft für authentische Bilder, bei denen Momente gezeigt werden so wie sie sind – ehrlich und ohne Inszenierung.',
+  body:
+    'Mit einem klaren Blick für richtige Momente, Licht und Ausdruck arbeite ich analog inspiriert, aber modern umgesetzt – reduziert auf das Wesentliche.\n\nMeine Fotografie soll nicht nur festhalten, sondern eine Geschichte erzählen. In einer Zeit, in der so vieles inszeniert wirkt, liegt mein Fokus auf Authentizität.',
+  focus: ['Editorial', 'Portrait', 'Documentary', 'Licht & Raum'],
+  base: 'Düsseldorf / NRW & weltweit verfügbar',
+};
+
+export const exhibitionItems = [
+  {
+    id: 'ex-01',
+    title: 'FLINGERN STUDIEN',
+    year: '2025',
+    location: 'Düsseldorf',
+    count: '01 / 06',
+    src: '/media/placeholder-black.svg',
+    aspect: '3 / 4',
+    colSpan: 'col-span-12 sm:col-span-7 lg:col-span-5',
+    offsetClass: 'lg:mt-6',
+  },
+  {
+    id: 'ex-02',
+    title: 'FREIBURG ARCHIV',
+    year: '2024',
+    location: 'Freiburg im Breisgau',
+    count: '01 / 04',
+    src: '/media/placeholder-black.svg',
+    aspect: '4 / 3',
+    colSpan: 'col-span-12 sm:col-span-5 lg:col-span-7',
+    offsetClass: 'lg:mt-24',
+  },
+  {
+    id: 'ex-03',
+    title: 'LICHT & RAUM II',
+    year: '2024',
+    location: 'Werkschau',
+    count: '01 / 08',
+    src: '/media/placeholder-black.svg',
+    aspect: '16 / 10',
+    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-6',
+    offsetClass: 'lg:-mt-12',
+  },
+  {
+    id: 'ex-04',
+    title: 'ANALOG OBSERVATIONS',
+    year: '2024',
+    location: 'Freiburg / Düsseldorf',
+    count: '01 / 05',
+    src: '/media/placeholder-black.svg',
+    aspect: '3 / 4',
+    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-4',
+    offsetClass: 'lg:mt-16',
+  },
+  {
+    id: 'ex-05',
+    title: 'PORTRAITSERIE I',
+    year: '2025',
+    location: 'Düsseldorf',
+    count: '01 / 07',
+    src: '/media/placeholder-black.svg',
+    aspect: '4 / 5',
+    colSpan: 'col-span-12 sm:col-span-7 lg:col-span-4',
+    offsetClass: 'lg:mt-0',
+  },
+  {
+    id: 'ex-06',
+    title: 'DAILY OPERATIONS',
+    year: '2025',
+    location: 'Selected Archive',
+    count: '01 / 12',
+    src: '/media/placeholder-black.svg',
+    aspect: '16 / 9',
+    colSpan: 'col-span-12 sm:col-span-5 lg:col-span-8',
+    offsetClass: 'lg:mt-20',
+  },
+];
+
 export const galleryRows = [
   {
     id: 'row-01',

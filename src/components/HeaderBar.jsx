@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import AboutOverlay from './AboutOverlay.jsx';
+import ExhibitionOverlay from './ExhibitionOverlay.jsx';
+import { aboutContent, exhibitionItems } from '../data/projects.js';
 
 export default function HeaderBar({ identity }) {
   const [menuOpen, setMenuOpen] = useState(true);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showScrollMark, setShowScrollMark] = useState(false);
+  const [activeOverlay, setActiveOverlay] = useState(null);
 
   useEffect(() => {
     const scroller = document.querySelector('.sf-snap-container');
@@ -86,12 +90,14 @@ export default function HeaderBar({ identity }) {
                 >
                   <button
                     type="button"
+                    onClick={() => setActiveOverlay('about')}
                     className="hover:text-ink-muted transition-colors cursor-pointer"
                   >
                     About
                   </button>
                   <button
                     type="button"
+                    onClick={() => setActiveOverlay('exhibition')}
                     className="hover:text-ink-muted transition-colors cursor-pointer"
                   >
                     Exhibition
@@ -115,19 +121,47 @@ export default function HeaderBar({ identity }) {
           >
             <button
               type="button"
-              onClick={() => setMobileDrawerOpen(false)}
-              className="text-left hover:text-ink-muted transition-colors"
+              onClick={() => {
+                setActiveOverlay('about');
+                setMobileDrawerOpen(false);
+              }}
+              className="text-left hover:text-ink-muted transition-colors cursor-pointer"
             >
               About
             </button>
             <button
               type="button"
-              onClick={() => setMobileDrawerOpen(false)}
-              className="text-left hover:text-ink-muted transition-colors"
+              onClick={() => {
+                setActiveOverlay('exhibition');
+                setMobileDrawerOpen(false);
+              }}
+              className="text-left hover:text-ink-muted transition-colors cursor-pointer"
             >
               Exhibition
             </button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* About & Exhibition Fullscreen Overlays */}
+      <AnimatePresence>
+        {activeOverlay === 'about' && (
+          <AboutOverlay
+            isOpen={true}
+            onClose={() => setActiveOverlay(null)}
+            identity={identity}
+            content={aboutContent}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeOverlay === 'exhibition' && (
+          <ExhibitionOverlay
+            isOpen={true}
+            onClose={() => setActiveOverlay(null)}
+            items={exhibitionItems}
+          />
         )}
       </AnimatePresence>
 
