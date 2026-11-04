@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HeaderBar from '../components/HeaderBar.jsx';
+import DriftingGallery from '../components/DriftingGallery.jsx';
+import MinimalFooter from '../components/MinimalFooter.jsx';
+import { siteIdentity, galleryRows } from '../data/projects.js';
+---
+
+<BaseLayout title="Samir Feikert — Photographer">
+  <div class="sf-snap-container">
+    <HeaderBar client:load identity={siteIdentity} />
+    <main>
+      <DriftingGallery client:load identity={siteIdentity} rows={galleryRows} />
+    </main>
+    <MinimalFooter client:load identity={siteIdentity} />
+  </div>
+</BaseLayout>
