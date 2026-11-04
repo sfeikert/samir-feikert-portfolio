@@ -111,6 +111,10 @@
   -webkit-user-select: none;
 }
 
+.sf-slider-viewport * {
+  touch-action: pan-y;
+}
+
 .sf-slider-viewport.is-dragging {
   cursor: grabbing;
 }

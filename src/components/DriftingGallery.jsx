@@ -68,11 +68,14 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
     let isVisible = true;
 
     const updateViewportMode = () => {
-      // Respect accessibility preference for reduced motion
+      // Disable auto-drift on touch devices and small mobile screens (swipe-only mode like reference)
+      const isTouchOrMobile = window.matchMedia(
+        '(hover: none), (pointer: coarse), (max-width: 767px)'
+      ).matches;
       const prefersReducedMotion = window.matchMedia(
         '(prefers-reduced-motion: reduce)'
       ).matches;
-      st.autoDrift = !prefersReducedMotion;
+      st.autoDrift = !isTouchOrMobile && !prefersReducedMotion;
     };
 
     const normalizePosition = () => {
@@ -243,6 +246,12 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
     }
   };
 
+  const handlePointerLeave = (e) => {
+    // Touch pointers should not trigger cancel on leave (finger movement can cross boundaries)
+    if (e.pointerType === 'touch') return;
+    finishPointer(e);
+  };
+
   const handleSlideClick = (slide) => {
     if (stateRef.current.didDrag) {
       stateRef.current.didDrag = false;
@@ -261,7 +270,7 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
         onPointerMove={handlePointerMove}
         onPointerUp={finishPointer}
         onPointerCancel={finishPointer}
-        onPointerLeave={finishPointer}
+        onPointerLeave={handlePointerLeave}
         onDragStart={(e) => e.preventDefault()}
         className={`sf-slider-viewport ${draggingClass ? 'is-dragging' : ''}`}
       >
