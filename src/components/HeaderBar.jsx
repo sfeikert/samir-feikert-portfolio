@@ -139,6 +139,13 @@ export default function HeaderBar({ identity }) {
             >
               Exhibition
             </button>
+            <a
+              href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
+              onClick={() => setMobileDrawerOpen(false)}
+              className="text-left hover:text-ink-muted transition-colors cursor-pointer"
+            >
+              Anfrage
+            </a>
           </motion.div>
         )}
       </AnimatePresence>
@@ -166,21 +173,31 @@ export default function HeaderBar({ identity }) {
         )}
       </AnimatePresence>
 
-      {/* Floating Scroll Wordmark */}
-      <div
-        className={`fixed top-6 right-6 sm:right-8 lg:right-10 z-30 transition-opacity duration-300 ${
-          showScrollMark ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-      >
+      {/* Top-Right Sticky Controls: "Anfrage" + Scroll Wordmark */}
+      <div className="fixed top-6 right-6 sm:right-8 lg:right-10 z-30 flex items-center gap-5 sm:gap-7">
         <a
-          href="#top"
-          className="inline-block text-right leading-none group"
-          aria-label="Scroll to top"
+          href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
+          className="font-sans font-normal text-xs sm:text-sm tracking-[0.12px] text-ink hover:text-ink-muted transition-colors cursor-pointer py-1"
         >
-          <span className="block font-display font-medium uppercase tracking-[0em] text-sm sm:text-base text-ink group-hover:text-ink-muted transition-colors">
-            {identity.monogram}
-          </span>
+          Anfrage
         </a>
+
+        {/* Floating Scroll Wordmark (fades in past 280px) */}
+        <div
+          className={`transition-opacity duration-300 ${
+            showScrollMark ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <a
+            href="#top"
+            className="inline-block text-right leading-none group"
+            aria-label="Scroll to top"
+          >
+            <span className="block font-display font-medium uppercase tracking-[0em] text-sm sm:text-base text-ink group-hover:text-ink-muted transition-colors">
+              {identity.monogram}
+            </span>
+          </a>
+        </div>
       </div>
     </>
   );
