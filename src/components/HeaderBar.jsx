@@ -173,16 +173,9 @@ export default function HeaderBar({ identity }) {
         )}
       </AnimatePresence>
 
-      {/* Top-Right Sticky Controls: "Anfrage" + Scroll Wordmark */}
-      <div className="fixed top-6 right-6 sm:right-8 lg:right-10 z-30 flex items-center gap-5 sm:gap-7">
-        <a
-          href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
-          className="font-sans font-normal text-xs sm:text-sm tracking-[0.12px] text-ink hover:text-ink-muted transition-colors cursor-pointer py-1"
-        >
-          Anfrage
-        </a>
-
-        {/* Floating Scroll Wordmark (fades in past 280px) */}
+      {/* Top-Right Sticky Controls: "SF" Monogram + Apple Pill "Anfrage" */}
+      <div className="fixed top-5 sm:top-6 right-5 sm:right-8 lg:right-10 z-30 flex items-center gap-3">
+        {/* Floating "SF" (fades in past 280px) */}
         <div
           className={`transition-opacity duration-300 ${
             showScrollMark ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -190,14 +183,22 @@ export default function HeaderBar({ identity }) {
         >
           <a
             href="#top"
-            className="inline-block text-right leading-none group"
+            className="inline-block text-right leading-none group py-1"
             aria-label="Scroll to top"
           >
-            <span className="block font-display font-medium uppercase tracking-[0em] text-sm sm:text-base text-ink group-hover:text-ink-muted transition-colors">
-              {identity.monogram}
+            <span className="block font-display font-medium uppercase tracking-[0.04em] text-sm sm:text-base text-ink group-hover:text-ink-muted transition-colors">
+              SF
             </span>
           </a>
         </div>
+
+        {/* Apple-style Pill Button "Anfrage" */}
+        <a
+          href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
+          className="inline-flex items-center justify-center font-sans font-normal text-xs tracking-[0.14px] text-ink bg-white/85 hover:bg-white border border-ink/20 hover:border-ink/50 backdrop-blur-sm rounded-full px-3.5 py-1.5 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+        >
+          Anfrage
+        </a>
       </div>
     </>
   );
