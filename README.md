@@ -2,7 +2,7 @@
 
 Minimalist, continuous-drift photography and motion portfolio for **Samir Feikert** (Trained Photographer based in Düsseldorf, Germany).
 
-Designed with a Swiss Neo-Grotesque editorial layout, infinite draggable horizontal image bands, and a pure monochrome palette.
+Designed with a editorial layout, infinite draggable horizontal image bands, and a monochrome palette.
 
 ---
 
