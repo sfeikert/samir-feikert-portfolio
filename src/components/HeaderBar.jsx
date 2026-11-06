@@ -11,26 +11,22 @@ export default function HeaderBar({ identity }) {
   const [activeOverlay, setActiveOverlay] = useState(null);
 
   useEffect(() => {
-    const scroller = document.querySelector('.sf-snap-container');
-
     const handleScroll = () => {
-      const y = scroller && scroller.scrollTop > 0 ? scroller.scrollTop : window.scrollY;
-      setShowScrollMark(y >= 280);
+      setShowScrollMark(window.scrollY >= 280);
     };
 
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    if (scroller) {
-      scroller.addEventListener('scroll', handleScroll, { passive: true });
-    }
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      if (scroller) {
-        scroller.removeEventListener('scroll', handleScroll);
-      }
     };
   }, []);
+
+  const handleScrollToTop = (e) => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <>
@@ -174,22 +170,23 @@ export default function HeaderBar({ identity }) {
       </AnimatePresence>
 
       {/* Top-Right Sticky Controls: "SF" Monogram + Apple Pill "Anfrage" */}
-      <div className="fixed top-5 sm:top-6 right-5 sm:right-8 lg:right-10 z-30 flex items-center gap-3">
+      <div className="fixed top-[max(1.25rem,env(safe-area-inset-top))] right-[max(1.25rem,env(safe-area-inset-right))] sm:top-6 sm:right-8 lg:right-10 z-30 flex items-center gap-3">
         {/* Floating "SF" (fades in past 280px) */}
         <div
           className={`transition-opacity duration-300 ${
             showScrollMark ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
           }`}
         >
-          <a
-            href="#top"
-            className="inline-block text-right leading-none group py-1"
+          <button
+            type="button"
+            onClick={handleScrollToTop}
+            className="inline-block text-right leading-none group py-1 cursor-pointer"
             aria-label="Scroll to top"
           >
             <span className="block font-display font-medium uppercase tracking-[0.04em] text-sm sm:text-base text-ink group-hover:text-ink-muted transition-colors">
               SF
             </span>
-          </a>
+          </button>
         </div>
 
         {/* Apple-style Pill Button "Anfrage" */}

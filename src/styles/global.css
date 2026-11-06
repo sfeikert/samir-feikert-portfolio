@@ -27,6 +27,7 @@
     font-feature-settings: 'clig' off, 'liga' off;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
   }
 
   @media (min-width: 640px) {
@@ -60,28 +61,14 @@
   }
 }
 
-/* Mobile vertical scroll-snap between gallery rows */
-@media (max-width: 767px) {
-  .sf-snap-container {
-    height: 100dvh;
-    overflow-y: auto;
-    scroll-snap-type: y mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .sf-snap-row:nth-child(n + 2),
-  .sf-snap-footer {
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-  }
-}
-
 /* Horizontal drifting gallery rows */
 .sf-gallery-row {
   display: flex;
   align-items: center;
   min-height: 100vh;
+  min-height: 100dvh;
   height: 100vh;
+  height: 100dvh;
   padding: 4rem 0;
   box-sizing: border-box;
 }
@@ -89,7 +76,9 @@
 /* First row sits close beneath the SAMIR FEIKERT masthead */
 .sf-gallery-row:first-child {
   min-height: 82vh;
+  min-height: 82dvh;
   height: 82vh;
+  height: 82dvh;
   padding-top: 1.5rem;
   padding-bottom: 3rem;
 }

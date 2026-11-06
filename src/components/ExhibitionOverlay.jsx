@@ -39,7 +39,7 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
         className="fixed inset-0 z-50 bg-white text-ink overflow-y-auto"
       >
         {/* Sticky Top Bar */}
-        <div className="sticky top-0 z-10 w-full px-6 sm:px-8 lg:px-10 py-6 bg-white/95 backdrop-blur-sm flex items-center justify-between border-b border-ink/10">
+        <div className="sticky top-0 z-10 w-full px-6 sm:px-8 lg:px-10 pt-[max(1.25rem,env(safe-area-inset-top))] pb-5 bg-white/95 backdrop-blur-sm flex items-center justify-between border-b border-ink/10">
           <div className="flex items-center gap-4">
             <span className="font-display font-medium uppercase text-sm sm:text-base tracking-[0.02em]">
               Exhibition & Archive

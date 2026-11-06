@@ -2,26 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 function getNextScrollState() {
-  const scroller = document.querySelector('.sf-snap-container');
-  const useContainer = Boolean(
-    scroller && window.matchMedia('(max-width: 767px)').matches
-  );
   const sections = Array.from(document.querySelectorAll('[data-gallery-section]')).slice(1);
   const footer = document.getElementById('contact-footer');
 
-  const currentY = useContainer ? scroller.scrollTop : window.scrollY;
-  const viewH = useContainer ? scroller.clientHeight : window.innerHeight;
+  const currentY = window.scrollY;
+  const viewH = window.innerHeight;
   const threshold = currentY + viewH * 0.25;
 
   const getTop = (el) => {
     if (!el) return 0;
-    if (useContainer) {
-      return (
-        el.getBoundingClientRect().top -
-        scroller.getBoundingClientRect().top +
-        scroller.scrollTop
-      );
-    }
     return el.getBoundingClientRect().top + window.scrollY;
   };
 
@@ -29,7 +18,7 @@ function getNextScrollState() {
   const hasFooter = footer && getTop(footer) > threshold + 60;
   const nextTarget = nextSection || (hasFooter ? footer : null);
 
-  return { scroller, useContainer, getTop, nextTarget };
+  return { nextTarget };
 }
 
 function DriftingRow({ row, rowIndex, onSelectMedia }) {
@@ -107,7 +96,6 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
       measureTrack();
     });
     resizeObserver.observe(viewport);
-    resizeObserver.observe(track);
 
     const io = new IntersectionObserver(
       (entries) => {
@@ -194,7 +182,8 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
     }
 
     if (!st.axis) {
-      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+      const threshold = e.pointerType === 'touch' ? 10 : 5;
+      if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
       st.axis = Math.abs(dx) >= Math.abs(dy) * 0.85 ? 'x' : 'y';
     }
 
@@ -343,8 +332,6 @@ export default function DriftingGallery({ identity, rows = [] }) {
   const [canScrollNext, setCanScrollNext] = useState(true);
 
   useEffect(() => {
-    const scroller = document.querySelector('.sf-snap-container');
-
     const checkNextAvailability = () => {
       const { nextTarget } = getNextScrollState();
       setCanScrollNext(Boolean(nextTarget));
@@ -353,35 +340,24 @@ export default function DriftingGallery({ identity, rows = [] }) {
     checkNextAvailability();
     window.addEventListener('scroll', checkNextAvailability, { passive: true });
     window.addEventListener('resize', checkNextAvailability, { passive: true });
-    if (scroller) {
-      scroller.addEventListener('scroll', checkNextAvailability, { passive: true });
-    }
 
     return () => {
       window.removeEventListener('scroll', checkNextAvailability);
       window.removeEventListener('resize', checkNextAvailability);
-      if (scroller) {
-        scroller.removeEventListener('scroll', checkNextAvailability);
-      }
     };
   }, []);
 
   const handleNextSection = () => {
-    const { scroller, useContainer, getTop, nextTarget } = getNextScrollState();
+    const { nextTarget } = getNextScrollState();
     if (!nextTarget) return;
-
-    if (useContainer) {
-      scroller.scrollTo({ top: getTop(nextTarget), behavior: 'smooth' });
-    } else {
-      nextTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    nextTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
     <div id="top" className="relative">
       {/* Left-aligned Swiss Neo-Grotesque Masthead positioned close above the first gallery strip */}
       <div className="mt-16 sm:mt-24 lg:mt-28 px-6 sm:px-8 lg:px-10">
-        <h1 className="font-display font-medium uppercase text-[2.75rem] sm:text-7xl lg:text-[5rem] xl:text-[5.75rem] leading-[1.0] tracking-[-0.015em] text-ink">
+        <h1 className="font-display font-medium uppercase text-4xl sm:text-7xl lg:text-[5rem] xl:text-[5.75rem] leading-[1.0] tracking-[-0.015em] text-ink">
           {identity.monogram}
         </h1>
         <p className="mt-3 font-sans font-normal text-sm sm:text-[0.95rem] tracking-[0.12px] text-ink-muted">
@@ -407,7 +383,7 @@ export default function DriftingGallery({ identity, rows = [] }) {
         onClick={handleNextSection}
         disabled={!canScrollNext}
         aria-label="Scroll to next gallery row"
-        className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-20 p-2 text-ink hover:text-ink-muted transition-all duration-200 ${
+        className={`fixed bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))] sm:bottom-8 left-1/2 -translate-x-1/2 z-20 p-2 text-ink hover:text-ink-muted transition-all duration-200 ${
           canScrollNext
             ? 'opacity-100 translate-y-0 cursor-pointer'
             : 'opacity-0 translate-y-2 pointer-events-none'
@@ -429,10 +405,22 @@ export default function DriftingGallery({ identity, rows = [] }) {
             onClick={() => setSelectedMedia(null)}
             className="fixed inset-0 z-50 bg-white/96 backdrop-blur-[2px] p-6 sm:p-12 flex flex-col items-center justify-center cursor-zoom-out"
           >
+            {/* Top Close Button (for touchscreens and mobile) */}
+            <div className="absolute top-[max(1.25rem,env(safe-area-inset-top))] right-[max(1.25rem,env(safe-area-inset-right))] sm:top-8 sm:right-8 z-10">
+              <button
+                type="button"
+                onClick={() => setSelectedMedia(null)}
+                aria-label="Schließen"
+                className="font-sans font-normal text-xs uppercase tracking-[0.12px] text-ink-muted hover:text-ink transition-colors cursor-pointer py-1.5 px-3 bg-white/90 rounded-full border border-ink/15 shadow-sm"
+              >
+                Schließen ×
+              </button>
+            </div>
+
             <img
               src={selectedMedia.src}
               alt={selectedMedia.label || ''}
-              className="max-h-[84vh] max-w-[90vw] object-contain"
+              className="max-h-[82vh] max-w-[90vw] object-contain"
             />
             {selectedMedia.label && (
               <p className="mt-4 font-sans font-normal text-sm tracking-[0.12px] text-ink">
