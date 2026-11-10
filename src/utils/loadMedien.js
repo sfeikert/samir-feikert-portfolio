@@ -17,7 +17,8 @@ const MEDIA_EXTENSIONS = new Set([
 
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v']);
 
-const ALIGN_PATTERN = ['top', 'middle', 'top', 'middle', 'bottom'];
+// Cloudflare Pages has a strict 25 MiB per-file limit
+const MAX_CLOUDFLARE_BYTES = 24.8 * 1024 * 1024;
 
 function toSlug(text, fallbackIndex = 0) {
   const slug = String(text || '')
@@ -35,10 +36,10 @@ function formatCategoryLabel(rawName) {
   const trimmed = rawName.trim().replace(/^[-_.\s]+|[-_.\s]+$/g, '');
   if (!trimmed) return 'Untitled Series';
 
-  // Replace underscores with spaces if no spaces exist
+  // Replace hyphens and underscores with spaces if no spaces exist
   const normalized = trimmed.includes(' ')
     ? trimmed
-    : trimmed.replace(/_/g, ' ');
+    : trimmed.replace(/[-_]+/g, ' ');
 
   // Capitalize first letter of words if entirely lowercase
   if (normalized === normalized.toLowerCase()) {
@@ -49,14 +50,14 @@ function formatCategoryLabel(rawName) {
 }
 
 /**
- * Extracts `{ categoryKey, label, order }` from a filename (without extension).
- * Examples:
- * - "Portrait Flingern 1" -> { label: "Portrait Flingern", order: 1 }
- * - "Editorial_02"        -> { label: "Editorial", order: 2 }
- * - "1_Studio"            -> { label: "Studio", order: 1 }
+ * Extracts `{ categoryKey, label, priority, order }` from a filename (without extension).
+ * - Files containing "startseite", "cover", or "titel" receive `priority: 0` so they are
+ *   always placed first on the start page even if another file is named `image00001`.
  */
 function parseFilename(baseName, folderName = null) {
   const clean = baseName.trim();
+  const isExplicitCover = /^(startseite|cover|titel)/i.test(clean);
+  const priority = isExplicitCover ? 0 : 1;
 
   if (folderName) {
     // Inside a subfolder: folder is the category, number in filename is the order
@@ -66,6 +67,7 @@ function parseFilename(baseName, folderName = null) {
     return {
       categoryKey: label.toLowerCase(),
       label,
+      priority,
       order,
     };
   }
@@ -78,6 +80,7 @@ function parseFilename(baseName, folderName = null) {
     return {
       categoryKey: label.toLowerCase(),
       label,
+      priority,
       order,
     };
   }
@@ -90,6 +93,7 @@ function parseFilename(baseName, folderName = null) {
     return {
       categoryKey: label.toLowerCase(),
       label,
+      priority,
       order,
     };
   }
@@ -99,12 +103,14 @@ function parseFilename(baseName, folderName = null) {
   return {
     categoryKey: label.toLowerCase(),
     label,
+    priority,
     order: 1,
   };
 }
 
 /**
- * Syncs files from `/Medien` to `/public/medien` and returns grouped projects & rows.
+ * Syncs files from `/Medien` to `/public/medien` (and optionally a target output directory)
+ * and returns grouped projects & rows.
  * Returns `null` if `/Medien` does not exist or contains no media files.
  */
 export function loadMedienProjects() {
@@ -131,18 +137,36 @@ export function loadMedienProjects() {
         const ext = path.extname(sub.name).toLowerCase();
         if (!MEDIA_EXTENSIONS.has(ext)) continue;
 
+        const absPath = path.join(fullPath, sub.name);
+        const stat = fs.statSync(absPath);
+        if (stat.size > MAX_CLOUDFLARE_BYTES) {
+          console.warn(
+            `[Medien] Skipping ${entry.name}/${sub.name} (${(stat.size / 1024 / 1024).toFixed(1)} MiB exceeds Cloudflare Pages 25 MiB limit)`
+          );
+          continue;
+        }
+
         collectedFiles.push({
-          absPath: path.join(fullPath, sub.name),
+          absPath,
           relPath: path.join(entry.name, sub.name),
           fileName: sub.name,
           baseName: path.basename(sub.name, path.extname(sub.name)),
           ext,
           folderName: entry.name,
+          stat,
         });
       }
     } else if (entry.isFile()) {
       const ext = path.extname(entry.name).toLowerCase();
       if (!MEDIA_EXTENSIONS.has(ext)) continue;
+
+      const stat = fs.statSync(fullPath);
+      if (stat.size > MAX_CLOUDFLARE_BYTES) {
+        console.warn(
+          `[Medien] Skipping ${entry.name} (${(stat.size / 1024 / 1024).toFixed(1)} MiB exceeds Cloudflare Pages 25 MiB limit)`
+        );
+        continue;
+      }
 
       collectedFiles.push({
         absPath: fullPath,
@@ -151,6 +175,7 @@ export function loadMedienProjects() {
         baseName: path.basename(entry.name, path.extname(entry.name)),
         ext,
         folderName: null,
+        stat,
       });
     }
   }
@@ -159,8 +184,26 @@ export function loadMedienProjects() {
     return null;
   }
 
-  // Ensure public/medien exists and sync files so Astro serves them at /medien/...
+  // Cleanly sync Medien -> public/medien (remove stale files that were deleted from Medien)
   fs.mkdirSync(publicMedienDir, { recursive: true });
+  const validRelPaths = new Set(collectedFiles.map((f) => f.relPath));
+
+  const cleanStaleFiles = (dir, relPrefix = '') => {
+    if (!fs.existsSync(dir)) return;
+    for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
+      const itemRel = relPrefix ? path.join(relPrefix, item.name) : item.name;
+      const itemAbs = path.join(dir, item.name);
+      if (item.isDirectory()) {
+        cleanStaleFiles(itemAbs, itemRel);
+        if (fs.readdirSync(itemAbs).length === 0) {
+          fs.rmdirSync(itemAbs);
+        }
+      } else if (!validRelPaths.has(itemRel)) {
+        fs.unlinkSync(itemAbs);
+      }
+    }
+  };
+  cleanStaleFiles(publicMedienDir);
 
   const categoriesMap = new Map();
 
@@ -170,9 +213,8 @@ export function loadMedienProjects() {
 
     let shouldCopy = !fs.existsSync(targetPath);
     if (!shouldCopy) {
-      const srcStat = fs.statSync(file.absPath);
       const destStat = fs.statSync(targetPath);
-      if (srcStat.size !== destStat.size || srcStat.mtimeMs > destStat.mtimeMs) {
+      if (file.stat.size !== destStat.size || file.stat.mtimeMs > destStat.mtimeMs) {
         shouldCopy = true;
       }
     }
@@ -185,7 +227,10 @@ export function loadMedienProjects() {
       .map((seg) => encodeURIComponent(seg));
     const publicUrl = `/medien/${urlSegments.join('/')}`;
 
-    const { categoryKey, label, order } = parseFilename(file.baseName, file.folderName);
+    const { categoryKey, label, priority, order } = parseFilename(
+      file.baseName,
+      file.folderName
+    );
 
     if (!categoriesMap.has(categoryKey)) {
       categoriesMap.set(categoryKey, {
@@ -197,17 +242,19 @@ export function loadMedienProjects() {
     categoriesMap.get(categoryKey).items.push({
       src: publicUrl,
       type: VIDEO_EXTENSIONS.has(file.ext) ? 'video' : 'image',
+      priority,
       order,
       fileName: file.fileName,
     });
   }
 
-  // Sort items within each category: 1 first (cover image), then 2, 3, 4...
+  // Sort items within each category: explicit cover ("startseite1") first, then 1, 2, 3...
   const projects = [];
   const seenSlugs = new Set();
 
   Array.from(categoriesMap.values()).forEach((cat, idx) => {
     cat.items.sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
       if (a.order !== b.order) return a.order - b.order;
       return a.fileName.localeCompare(b.fileName, 'de', { numeric: true });
     });
@@ -219,14 +266,13 @@ export function loadMedienProjects() {
     seenSlugs.add(slug);
 
     const cover = cat.items[0];
-    const align = ALIGN_PATTERN[idx % ALIGN_PATTERN.length];
 
     projects.push({
       slug,
       type: cover.type,
       src: cover.src,
       label: cat.label,
-      align,
+      align: 'middle',
       wide: false,
       aspect: 'auto',
       images: cat.items.map((item, imageIndex) => ({
@@ -239,7 +285,7 @@ export function loadMedienProjects() {
     });
   });
 
-  // Distribute projects across up to 4 horizontal rows (like the reference layout)
+  // Distribute projects across up to 4 horizontal rows
   const targetRowCount = Math.min(4, Math.max(1, Math.ceil(projects.length / 4)));
   const rows = Array.from({ length: targetRowCount }, (_, rIdx) => ({
     id: `row-0${rIdx + 1}`,

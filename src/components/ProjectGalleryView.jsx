@@ -57,16 +57,24 @@ export default function ProjectGalleryView({ identity, project }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [goNext, goPrev, activeOverlay, activeLegal, mobileDrawerOpen]);
 
-  // Preload adjacent images for instant click-through
+  // Preload & pre-decode adjacent images in memory for zero-flicker click-through
   useEffect(() => {
     if (total <= 1) return;
-    const nextImg = images[(currentIndex + 1) % total];
-    const prevImg = images[(currentIndex - 1 + total) % total];
+    const indicesToPreload = [
+      (currentIndex + 1) % total,
+      (currentIndex + 2) % total,
+      (currentIndex - 1 + total) % total,
+    ];
 
-    [nextImg, prevImg].forEach((item) => {
+    indicesToPreload.forEach((idx) => {
+      const item = images[idx];
       if (item && item.type !== 'video' && item.src) {
         const preload = new Image();
+        preload.decoding = 'sync';
         preload.src = item.src;
+        if (typeof preload.decode === 'function') {
+          preload.decode().catch(() => {});
+        }
       }
     });
   }, [currentIndex, images, total]);
@@ -270,68 +278,88 @@ export default function ProjectGalleryView({ identity, project }) {
         )}
       </AnimatePresence>
 
-      {/* Main Interactive Single-Image Stage (Click or Swipe to Step Through) */}
+      {/* Main Interactive Single-Image Stage (Click or Swipe to Step Through — Zero White Flash) */}
       <main
         onPointerDown={handleStagePointerDown}
         onPointerUp={handleStagePointerUp}
         title="Click to step through images"
         className="relative flex-1 w-full flex items-center justify-center px-6 sm:px-12 lg:px-20 overflow-hidden cursor-pointer"
       >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentIndex}
-            initial={{ opacity: 0.25 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0.25 }}
-            transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="relative flex items-center justify-center max-w-full max-h-full"
-          >
-            {isAutoAspect ? (
-              currentMedia.type === 'video' ? (
-                <video
-                  src={currentMedia.src}
-                  poster={currentMedia.poster}
-                  muted
-                  loop
-                  autoPlay
-                  playsInline
-                  className="max-h-[66dvh] sm:max-h-[74dvh] max-w-[88vw] sm:max-w-[80vw] w-auto h-auto object-contain pointer-events-none"
-                />
-              ) : (
-                <img
-                  src={currentMedia.src}
-                  alt={`${project.label || 'Project'} — ${currentIndex + 1}`}
-                  decoding="async"
-                  className="max-h-[66dvh] sm:max-h-[74dvh] max-w-[88vw] sm:max-w-[80vw] w-auto h-auto object-contain pointer-events-none"
-                />
-              )
-            ) : (
-              <div
-                style={{ aspectRatio: currentMedia.aspect }}
-                className="max-h-[66dvh] sm:max-h-[74dvh] max-w-[88vw] sm:max-w-[80vw] h-[64dvh] sm:h-[72dvh] w-auto overflow-hidden bg-ink-tint pointer-events-none"
-              >
-                {currentMedia.type === 'video' ? (
+        {images.map((media, idx) => {
+          const isCurrent = idx === currentIndex;
+          const isNeighbor =
+            total > 1 &&
+            (idx === (currentIndex + 1) % total ||
+              idx === (currentIndex + 2) % total ||
+              idx === (currentIndex - 1 + total) % total);
+
+          if (!isCurrent && !isNeighbor) return null;
+
+          const mediaAutoAspect = !media.aspect || media.aspect === 'auto';
+
+          return (
+            <div
+              key={`${media.src}-${idx}`}
+              aria-hidden={!isCurrent}
+              className={
+                isCurrent
+                  ? 'relative z-10 opacity-100 flex items-center justify-center max-w-full max-h-full'
+                  : 'absolute inset-0 z-0 opacity-0 pointer-events-none flex items-center justify-center px-6 sm:px-12 lg:px-20'
+              }
+            >
+              {mediaAutoAspect ? (
+                media.type === 'video' ? (
                   <video
-                    src={currentMedia.src}
-                    poster={currentMedia.poster}
+                    src={media.src}
+                    poster={media.poster}
                     muted
                     loop
-                    autoPlay
+                    autoPlay={isCurrent}
                     playsInline
-                    className="w-full h-full object-cover"
+                    preload="auto"
+                    className="max-h-[66dvh] sm:max-h-[74dvh] max-w-[88vw] sm:max-w-[80vw] w-auto h-auto object-contain pointer-events-none"
                   />
                 ) : (
                   <img
-                    src={currentMedia.src}
-                    alt={`${project.label || 'Project'} — ${currentIndex + 1}`}
-                    decoding="async"
-                    className="w-full h-full object-cover"
+                    src={media.src}
+                    alt={isCurrent ? `${project.label || 'Project'} — ${idx + 1}` : ''}
+                    loading="eager"
+                    decoding="sync"
+                    draggable={false}
+                    className="max-h-[66dvh] sm:max-h-[74dvh] max-w-[88vw] sm:max-w-[80vw] w-auto h-auto object-contain pointer-events-none"
                   />
-                )}
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
+                )
+              ) : (
+                <div
+                  style={{ aspectRatio: media.aspect }}
+                  className="max-h-[66dvh] sm:max-h-[74dvh] max-w-[88vw] sm:max-w-[80vw] h-[64dvh] sm:h-[72dvh] w-auto overflow-hidden bg-ink-tint pointer-events-none"
+                >
+                  {media.type === 'video' ? (
+                    <video
+                      src={media.src}
+                      poster={media.poster}
+                      muted
+                      loop
+                      autoPlay={isCurrent}
+                      playsInline
+                      preload="auto"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={media.src}
+                      alt={isCurrent ? `${project.label || 'Project'} — ${idx + 1}` : ''}
+                      loading="eager"
+                      decoding="sync"
+                      draggable={false}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </main>
 
       {/* Bottom Project Info, Step Counter & Legal Links */}
