@@ -166,8 +166,16 @@
 /* Media card & hover caption */
 .sf-media-card {
   position: relative;
+  display: block;
   width: 100%;
   overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sf-slider-viewport.is-dragging .sf-media-card {
+  cursor: grabbing;
 }
 
 .sf-media-card img,

@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProjectGalleryView from '../../components/ProjectGalleryView.jsx';
+import { siteIdentity, getAllProjects } from '../../data/projects.js';
+import { loadMedienProjects } from '../../utils/loadMedien.js';
+
+export function getStaticPaths() {
+  const medienData = loadMedienProjects();
+  const projects = medienData?.projects?.length ? medienData.projects : getAllProjects();
+
+  return projects.map((project) => ({
+    params: { slug: project.slug },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const pageTitle = project?.label
+  ? `${project.label} — ${siteIdentity.name}`
+  : `${siteIdentity.name} — Photographer`;
+---
+
+<BaseLayout title={pageTitle}>
+  <ProjectGalleryView client:load identity={siteIdentity} project={project} />
+</BaseLayout>

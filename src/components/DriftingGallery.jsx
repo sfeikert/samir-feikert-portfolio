@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { isVideoPath, toProjectSlug } from '../data/projects.js';
 
 function getNextScrollState() {
   const sections = Array.from(document.querySelectorAll('[data-gallery-section]')).slice(1);
@@ -21,7 +21,7 @@ function getNextScrollState() {
   return { nextTarget };
 }
 
-function DriftingRow({ row, rowIndex, onSelectMedia }) {
+function DriftingRow({ row, rowIndex }) {
   const viewportRef = useRef(null);
   const trackRef = useRef(null);
   const stateRef = useRef({
@@ -241,13 +241,10 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
     finishPointer(e);
   };
 
-  const handleSlideClick = (slide) => {
+  const handleSlideClick = (e) => {
     if (stateRef.current.didDrag) {
+      e.preventDefault();
       stateRef.current.didDrag = false;
-      return;
-    }
-    if (slide.type !== 'video' && onSelectMedia) {
-      onSelectMedia(slide);
     }
   };
 
@@ -280,17 +277,24 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
               ? 'sf-media-auto'
               : 'w-full h-full object-cover';
 
+            const projectSlug = toProjectSlug(slide, idx);
+
             return (
               <div
                 key={`${row.id}-${idx}`}
                 className={`sf-slide ${alignClass} ${slide.wide ? 'sf-wide' : ''}`}
               >
-                <div onClick={() => handleSlideClick(slide)} className="sf-media-card">
+                <a
+                  href={`/projects/${projectSlug}`}
+                  draggable={false}
+                  onClick={handleSlideClick}
+                  className="sf-media-card block cursor-pointer"
+                >
                   <div
                     style={isAutoAspect ? undefined : { aspectRatio: slide.aspect }}
                     className="w-full overflow-hidden bg-ink-tint"
                   >
-                    {slide.type === 'video' ? (
+                    {slide.type === 'video' || isVideoPath(slide.src) ? (
                       <video
                         src={slide.src}
                         poster={slide.poster}
@@ -304,6 +308,7 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
                       <img
                         src={slide.src}
                         alt={slide.label || ''}
+                        draggable={false}
                         loading={rowIndex === 0 && idx < 6 ? 'eager' : 'lazy'}
                         decoding="async"
                         className={mediaClass}
@@ -317,7 +322,7 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
                       <div className="sf-media-caption">{slide.label}</div>
                     </>
                   )}
-                </div>
+                </a>
               </div>
             );
           })}
@@ -328,7 +333,6 @@ function DriftingRow({ row, rowIndex, onSelectMedia }) {
 }
 
 export default function DriftingGallery({ identity, rows = [] }) {
-  const [selectedMedia, setSelectedMedia] = useState(null);
   const [canScrollNext, setCanScrollNext] = useState(true);
 
   useEffect(() => {
@@ -372,7 +376,6 @@ export default function DriftingGallery({ identity, rows = [] }) {
             key={row.id}
             row={row}
             rowIndex={idx}
-            onSelectMedia={setSelectedMedia}
           />
         ))}
       </div>
@@ -393,43 +396,6 @@ export default function DriftingGallery({ identity, rows = [] }) {
           <path d="M0.5 0.5L6.5 6.5L12.5 0.5" />
         </svg>
       </button>
-
-      {/* Lightbox View on Click */}
-      <AnimatePresence>
-        {selectedMedia && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={() => setSelectedMedia(null)}
-            className="fixed inset-0 z-50 bg-white/96 backdrop-blur-[2px] p-6 sm:p-12 flex flex-col items-center justify-center cursor-zoom-out"
-          >
-            {/* Top Close Button (for touchscreens and mobile) */}
-            <div className="absolute top-[max(1.25rem,env(safe-area-inset-top))] right-[max(1.25rem,env(safe-area-inset-right))] sm:top-8 sm:right-8 z-10">
-              <button
-                type="button"
-                onClick={() => setSelectedMedia(null)}
-                aria-label="Schließen"
-                className="font-sans font-normal text-xs uppercase tracking-[0.12px] text-ink-muted hover:text-ink transition-colors cursor-pointer py-1.5 px-3 bg-white/90 rounded-full border border-ink/15 shadow-sm"
-              >
-                Schließen ×
-              </button>
-            </div>
-
-            <img
-              src={selectedMedia.src}
-              alt={selectedMedia.label || ''}
-              className="max-h-[82vh] max-w-[90vw] object-contain"
-            />
-            {selectedMedia.label && (
-              <p className="mt-4 font-sans font-normal text-sm tracking-[0.12px] text-ink">
-                {selectedMedia.label}
-              </p>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

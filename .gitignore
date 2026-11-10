@@ -1,6 +1,7 @@
 # Build & Astro cache
 dist/
 .astro/
+public/medien/
 
 # Dependencies
 node_modules/
