@@ -5,6 +5,11 @@ const {
   title = 'Samir Feikert — Photographer',
   description = 'Portfolio of Samir Feikert — Trained Photographer based in Düsseldorf.',
 } = Astro.props;
+
+const canonicalUrl = new URL(
+  Astro.url.pathname,
+  Astro.site || 'https://samirfeikert.com'
+).href;
 ---
 
 <!doctype html>
@@ -13,13 +18,13 @@ const {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="canonical" href="https://samirfeikert.com/" />
+    <link rel="canonical" href={canonicalUrl} />
     <meta name="description" content={description} />
     <title>{title}</title>
 
     <!-- Open Graph / Social Sharing Previews (WhatsApp, iMessage, Instagram, LinkedIn) -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://samirfeikert.com/" />
+    <meta property="og:url" content={canonicalUrl} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content="Samir Feikert" />

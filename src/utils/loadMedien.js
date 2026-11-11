@@ -29,6 +29,12 @@ const ROW_1_ORDER = [
 ];
 const ROW_1_FOLDERS = new Set(ROW_1_ORDER);
 
+// Pre-generated poster frames for instant display on iOS Safari (even in Low Power Mode)
+const VIDEO_POSTERS = {
+  'timon-editorial': '/media/poster-timon-editorial.jpg',
+  'dbb-double-header': '/media/poster-dbb-double-header.jpg',
+};
+
 function toSlug(text, fallbackIndex = 0) {
   const slug = String(text || '')
     .toLowerCase()
@@ -56,6 +62,65 @@ function formatCategoryLabel(rawName) {
   }
 
   return normalized;
+}
+
+/**
+ * Pure Node.js dimension reader for JPEG and PNG files (zero external dependencies,
+ * works identically on macOS and Cloudflare Pages Linux builds).
+ */
+function getMediaDimensions(filePath, ext) {
+  try {
+    if (VIDEO_EXTENSIONS.has(ext)) {
+      return { width: 1080, height: 1350 };
+    }
+
+    const fd = fs.openSync(filePath, 'r');
+    const maxRead = 256 * 1024;
+    const buf = Buffer.alloc(maxRead);
+    const bytesRead = fs.readSync(fd, buf, 0, maxRead, 0);
+    fs.closeSync(fd);
+
+    if (ext === '.png' && bytesRead >= 24) {
+      const width = buf.readUInt32BE(16);
+      const height = buf.readUInt32BE(20);
+      if (width > 0 && height > 0) return { width, height };
+    }
+
+    if ((ext === '.jpg' || ext === '.jpeg') && bytesRead > 4 && buf[0] === 0xff && buf[1] === 0xd8) {
+      let i = 2;
+      while (i < bytesRead - 9) {
+        if (buf[i] !== 0xff) {
+          i++;
+          continue;
+        }
+        const marker = buf[i + 1];
+        if (marker === 0xff) {
+          i++;
+          continue;
+        }
+        if (
+          marker === 0xc0 ||
+          marker === 0xc1 ||
+          marker === 0xc2 ||
+          marker === 0xc3
+        ) {
+          const height = buf.readUInt16BE(i + 5);
+          const width = buf.readUInt16BE(i + 7);
+          if (width > 0 && height > 0) return { width, height };
+          break;
+        }
+        if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) {
+          i += 2;
+          continue;
+        }
+        const len = buf.readUInt16BE(i + 2);
+        if (len < 2) break;
+        i += 2 + len;
+      }
+    }
+  } catch {}
+
+  return { width: 1080, height: 1350 };
 }
 
 /**
@@ -292,6 +357,9 @@ export function loadMedienProjects() {
       file.folderName
     );
 
+    const { width, height } = getMediaDimensions(file.absPath, file.ext);
+    const isVideo = VIDEO_EXTENSIONS.has(file.ext);
+
     if (!categoriesMap.has(categoryKey)) {
       categoriesMap.set(categoryKey, {
         key: categoryKey,
@@ -302,7 +370,11 @@ export function loadMedienProjects() {
 
     categoriesMap.get(categoryKey).items.push({
       src: publicUrl,
-      type: VIDEO_EXTENSIONS.has(file.ext) ? 'video' : 'image',
+      type: isVideo ? 'video' : 'image',
+      poster: isVideo ? VIDEO_POSTERS[categoryKey] : undefined,
+      width,
+      height,
+      intrinsicAspect: `${width} / ${height}`,
       seriesPrefix,
       priority,
       order,
@@ -328,6 +400,10 @@ export function loadMedienProjects() {
       slug,
       type: cover.type,
       src: cover.src,
+      poster: cover.poster,
+      width: cover.width,
+      height: cover.height,
+      intrinsicAspect: cover.intrinsicAspect,
       label: cat.label,
       align: 'middle',
       wide: false,
@@ -336,6 +412,10 @@ export function loadMedienProjects() {
       images: sortedItems.map((item, imageIndex) => ({
         src: item.src,
         type: item.type,
+        poster: item.poster,
+        width: item.width,
+        height: item.height,
+        intrinsicAspect: item.intrinsicAspect,
         aspect: 'auto',
         caption: '',
         index: imageIndex,
@@ -351,10 +431,6 @@ export function loadMedienProjects() {
   // Remaining Medien projects (e.g. DBB Double Header and future folders) go into Row 2+
   const extraProjects = medienProjects.filter((p) => !ROW_1_FOLDERS.has(p.slug));
 
-  // Build the 4 rows:
-  // - Row 1: row1Projects (if any placeholders are needed when < 3, fill from galleryRows[0])
-  // - Row 2..4: fill first with extraProjects (1 title photo per project, e.g. DBB Double Header),
-  //   and fill all remaining slots with the black placeholders from galleryRows!
   const rows = [];
 
   // Row 1

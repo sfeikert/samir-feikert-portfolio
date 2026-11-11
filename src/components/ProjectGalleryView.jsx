@@ -303,17 +303,28 @@ export default function ProjectGalleryView({ identity, project }) {
                     <video
                       src={media.src}
                       poster={media.poster}
+                      width={media.width || 1080}
+                      height={media.height || 1350}
                       muted
                       loop
                       autoPlay={isCurrent}
                       playsInline
                       preload="auto"
+                      onLoadedMetadata={(e) => {
+                        e.currentTarget.muted = true;
+                        e.currentTarget.defaultMuted = true;
+                        if (isCurrent) {
+                          e.currentTarget.play().catch(() => {});
+                        }
+                      }}
                       className="max-h-[66dvh] sm:max-h-[74dvh] max-w-[88vw] sm:max-w-[80vw] w-auto h-auto object-contain pointer-events-none"
                     />
                   ) : (
                     <img
                       src={media.src}
                       alt={isCurrent ? `${project.label || 'Project'} — ${idx + 1}` : ''}
+                      width={media.width || 1080}
+                      height={media.height || 1350}
                       loading="eager"
                       decoding="sync"
                       draggable={false}
@@ -437,6 +448,8 @@ export default function ProjectGalleryView({ identity, project }) {
                     <video
                       src={item.src}
                       poster={item.poster}
+                      width={item.width || 1080}
+                      height={item.height || 1350}
                       muted
                       loop
                       playsInline
@@ -449,6 +462,8 @@ export default function ProjectGalleryView({ identity, project }) {
                     <img
                       src={item.src}
                       alt={`${project.label || 'Project'} — ${idx + 1}`}
+                      width={item.width || 1080}
+                      height={item.height || 1350}
                       loading="lazy"
                       decoding="async"
                       draggable={false}

@@ -57,14 +57,10 @@ function DriftingRow({ row, rowIndex }) {
     let isVisible = true;
 
     const updateViewportMode = () => {
-      // Disable auto-drift on touch devices and small mobile screens (swipe-only mode like reference)
-      const isTouchOrMobile = window.matchMedia(
-        '(hover: none), (pointer: coarse), (max-width: 767px)'
-      ).matches;
       const prefersReducedMotion = window.matchMedia(
         '(prefers-reduced-motion: reduce)'
       ).matches;
-      st.autoDrift = !isTouchOrMobile && !prefersReducedMotion;
+      st.autoDrift = !prefersReducedMotion;
     };
 
     const normalizePosition = () => {
@@ -88,30 +84,39 @@ function DriftingRow({ row, rowIndex }) {
       track.style.transform = `translate3d(${st.x}px, 0, 0)`;
     };
 
+    const initVideos = (shouldPlay) => {
+      const videos = track.querySelectorAll('video');
+      videos.forEach((vid) => {
+        vid.muted = true;
+        vid.defaultMuted = true;
+        vid.playsInline = true;
+        if (shouldPlay) {
+          vid.play().catch(() => {});
+        } else {
+          vid.pause();
+        }
+      });
+    };
+
     updateViewportMode();
     measureTrack();
+    initVideos(true);
 
     const resizeObserver = new ResizeObserver(() => {
       updateViewportMode();
       measureTrack();
     });
     resizeObserver.observe(viewport);
+    resizeObserver.observe(track);
 
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           isVisible = entry.isIntersecting;
-          const videos = track.querySelectorAll('video');
-          videos.forEach((vid) => {
-            if (entry.isIntersecting) {
-              vid.play().catch(() => {});
-            } else {
-              vid.pause();
-            }
-          });
+          initVideos(entry.isIntersecting);
         });
       },
-      { rootMargin: '250px 0px' }
+      { rootMargin: '350px 0px' }
     );
     io.observe(viewport);
 
@@ -269,19 +274,25 @@ function DriftingRow({ row, rowIndex }) {
                 ? 'sf-align-bottom'
                 : 'sf-align-top';
 
-            // `aspect: 'auto'` (or no aspect) → frame follows the file's own
-            // dimensions, nothing gets cropped. A fixed ratio (e.g. '3 / 4')
-            // crops the media to that frame via object-cover.
             const isAutoAspect = !slide.aspect || slide.aspect === 'auto';
             const mediaClass = isAutoAspect
               ? 'sf-media-auto'
               : 'w-full h-full object-cover';
+
+            // Reserve exact aspect ratio in CSS so mobile Safari never collapses unloaded frames to 0px
+            const frameAspect = isAutoAspect
+              ? slide.intrinsicAspect || undefined
+              : slide.aspect;
 
             const projectSlug = toProjectSlug(slide, idx);
             const projectHref =
               slide.startIndex && slide.startIndex > 0
                 ? `/projects/${projectSlug}?slide=${slide.startIndex}`
                 : `/projects/${projectSlug}`;
+
+            // Row 1 and Row 2 load eagerly across all cycles so the center cycle (`st.x = -newCycleWidth`)
+            // is immediately visible on iOS Safari without waiting for scroll events.
+            const isEagerRow = rowIndex <= 1;
 
             return (
               <div
@@ -295,26 +306,32 @@ function DriftingRow({ row, rowIndex }) {
                   className="sf-media-card block cursor-pointer"
                 >
                   <div
-                    style={isAutoAspect ? undefined : { aspectRatio: slide.aspect }}
+                    style={frameAspect ? { aspectRatio: frameAspect } : undefined}
                     className="w-full overflow-hidden bg-ink-tint"
                   >
                     {slide.type === 'video' || isVideoPath(slide.src) ? (
                       <video
                         src={slide.src}
                         poster={slide.poster}
+                        width={slide.width || 1080}
+                        height={slide.height || 1350}
+                        autoPlay
                         muted
                         loop
                         playsInline
-                        preload="metadata"
+                        preload={rowIndex === 0 ? 'auto' : 'metadata'}
                         className={mediaClass}
                       />
                     ) : (
                       <img
                         src={slide.src}
                         alt={slide.label || ''}
+                        width={slide.width || 1080}
+                        height={slide.height || 1350}
                         draggable={false}
-                        loading={rowIndex === 0 && idx < 6 ? 'eager' : 'lazy'}
-                        decoding="async"
+                        loading={isEagerRow ? 'eager' : 'lazy'}
+                        fetchPriority={rowIndex === 0 ? 'high' : 'auto'}
+                        decoding={rowIndex === 0 ? 'sync' : 'async'}
                         className={mediaClass}
                       />
                     )}
@@ -364,11 +381,11 @@ export default function DriftingGallery({ identity, rows = [] }) {
   return (
     <div id="top" className="relative">
       {/* Left-aligned Swiss Neo-Grotesque Masthead positioned close above the first gallery strip */}
-      <div className="mt-16 sm:mt-24 lg:mt-28 px-6 sm:px-8 lg:px-10">
+      <div className="mt-8 sm:mt-20 lg:mt-28 px-6 sm:px-8 lg:px-10">
         <h1 className="font-display font-medium uppercase text-4xl sm:text-7xl lg:text-[5rem] xl:text-[5.75rem] leading-[1.0] tracking-[-0.015em] text-ink">
           {identity.monogram}
         </h1>
-        <p className="mt-3 font-sans font-normal text-sm sm:text-[0.95rem] tracking-[0.12px] text-ink-muted">
+        <p className="mt-2.5 sm:mt-3 font-sans font-normal text-sm sm:text-[0.95rem] tracking-[0.12px] text-ink-muted">
           {identity.subtitle}
         </p>
       </div>
