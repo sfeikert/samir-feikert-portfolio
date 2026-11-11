@@ -20,6 +20,13 @@ const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v']);
 // Cloudflare Pages has a strict 25 MiB per-file limit
 const MAX_CLOUDFLARE_BYTES = 24.8 * 1024 * 1024;
 
+// Preferred order for Row 1 vs Row 2+ folders
+const ROW_1_FOLDERS = new Set([
+  'samuel-brillenfotos-beyeler',
+  'timon-editorial',
+  'mercedes-avia',
+]);
+
 function toSlug(text, fallbackIndex = 0) {
   const slug = String(text || '')
     .toLowerCase()
@@ -50,67 +57,116 @@ function formatCategoryLabel(rawName) {
 }
 
 /**
- * Extracts `{ categoryKey, label, priority, order }` from a filename (without extension).
- * - Files containing "startseite", "cover", or "titel" receive `priority: 0` so they are
- *   always placed first on the start page even if another file is named `image00001`.
+ * Extracts `{ categoryKey, label, seriesPrefix, priority, order }` from a filename.
  */
 function parseFilename(baseName, folderName = null) {
   const clean = baseName.trim();
   const isExplicitCover = /^(startseite|cover|titel)/i.test(clean);
   const priority = isExplicitCover ? 0 : 1;
 
+  // Extract trailing number & prefix (e.g. "Dbb Post 1" -> prefix "dbb post", order 1)
+  const trailingMatch = clean.match(/^(.+?)[-_.\s(]*(\d+)\)?$/);
+  const leadingMatch = !trailingMatch ? clean.match(/^(\d+)[-_.\s]+(.+)$/) : null;
+
+  let seriesPrefix = clean.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  let order = 999;
+
+  if (trailingMatch && trailingMatch[1].trim()) {
+    seriesPrefix = trailingMatch[1]
+      .trim()
+      .toLowerCase()
+      .replace(/^[-_.\s]+|[-_.\s]+$/g, '');
+    order = parseInt(trailingMatch[2], 10);
+  } else if (leadingMatch && leadingMatch[2].trim()) {
+    seriesPrefix = leadingMatch[2]
+      .trim()
+      .toLowerCase()
+      .replace(/^[-_.\s]+|[-_.\s]+$/g, '');
+    order = parseInt(leadingMatch[1], 10);
+  } else {
+    const anyNum = clean.match(/(\d+)/);
+    if (anyNum) {
+      order = parseInt(anyNum[1], 10);
+    }
+  }
+
   if (folderName) {
-    // Inside a subfolder: folder is the category, number in filename is the order
-    const numMatch = clean.match(/(\d+)/);
-    const order = numMatch ? parseInt(numMatch[1], 10) : 999;
     const label = formatCategoryLabel(folderName);
     return {
-      categoryKey: label.toLowerCase(),
+      categoryKey: toSlug(folderName),
       label,
+      seriesPrefix,
       priority,
       order,
     };
   }
 
-  // Case 1: Name followed by number at the end, e.g. "Kategorie 1", "Kategorie-01", "Kategorie (1)"
-  const trailingMatch = clean.match(/^(.+?)[-_.\s(]*(\d+)\)?$/);
-  if (trailingMatch && trailingMatch[1].trim()) {
-    const label = formatCategoryLabel(trailingMatch[1]);
-    const order = parseInt(trailingMatch[2], 10);
-    return {
-      categoryKey: label.toLowerCase(),
-      label,
-      priority,
-      order,
-    };
-  }
-
-  // Case 2: Number at the start followed by name, e.g. "1 Kategorie", "01_Kategorie"
-  const leadingMatch = clean.match(/^(\d+)[-_.\s]+(.+)$/);
-  if (leadingMatch && leadingMatch[2].trim()) {
-    const label = formatCategoryLabel(leadingMatch[2]);
-    const order = parseInt(leadingMatch[1], 10);
-    return {
-      categoryKey: label.toLowerCase(),
-      label,
-      priority,
-      order,
-    };
-  }
-
-  // Case 3: No number in filename -> single-image category
-  const label = formatCategoryLabel(clean);
+  const rawLabel = trailingMatch?.[1] || leadingMatch?.[2] || clean;
+  const label = formatCategoryLabel(rawLabel);
   return {
-    categoryKey: label.toLowerCase(),
+    categoryKey: toSlug(label),
     label,
+    seriesPrefix,
     priority,
-    order: 1,
+    order: order === 999 ? 1 : order,
   };
 }
 
 /**
- * Syncs files from `/Medien` to `/public/medien` (and optionally a target output directory)
- * and returns grouped projects & rows.
+ * Sorts items inside a category cleanly:
+ * 1. Explicit cover files (`startseite1.MP4`) come first.
+ * 2. Sub-series are grouped by their filename prefix (`Dbb Post 1..12`, then video, then `Unbenannt-2..10`)
+ *    so different series inside the same folder never get interleaved.
+ * 3. Within each sub-series, items are sorted by number ascending (`1, 2, 3...`).
+ */
+function sortCategoryItems(items) {
+  // Determine rank for each seriesPrefix:
+  // Prefixes that contain `order === 1` come first, then videos, then other prefixes.
+  const prefixMeta = new Map();
+
+  for (const item of items) {
+    const key = item.type === 'video' && item.priority > 0 ? `__video_${item.fileName}` : item.seriesPrefix;
+    item._groupKey = key;
+
+    if (!prefixMeta.has(key)) {
+      prefixMeta.set(key, {
+        minPriority: item.priority,
+        minOrder: item.order,
+        isVideo: item.type === 'video',
+      });
+    } else {
+      const meta = prefixMeta.get(key);
+      meta.minPriority = Math.min(meta.minPriority, item.priority);
+      meta.minOrder = Math.min(meta.minOrder, item.order);
+    }
+  }
+
+  return [...items].sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+
+    if (a._groupKey !== b._groupKey) {
+      const metaA = prefixMeta.get(a._groupKey);
+      const metaB = prefixMeta.get(b._groupKey);
+
+      // Group that starts with #1 comes first
+      const aHasOne = metaA.minOrder === 1 ? 0 : 1;
+      const bHasOne = metaB.minOrder === 1 ? 0 : 1;
+      if (aHasOne !== bHasOne) return aHasOne - bHasOne;
+
+      // Place standalone videos right between the first and second photo sub-series
+      if (metaA.isVideo !== metaB.isVideo) return metaA.isVideo ? -1 : 1;
+
+      if (metaA.minOrder !== metaB.minOrder) return metaA.minOrder - metaB.minOrder;
+      return a._groupKey.localeCompare(b._groupKey, 'de', { numeric: true });
+    }
+
+    if (a.order !== b.order) return a.order - b.order;
+    return a.fileName.localeCompare(b.fileName, 'de', { numeric: true });
+  });
+}
+
+/**
+ * Syncs files from `/Medien` to `/public/medien` and returns grouped projects & rows.
  * Returns `null` if `/Medien` does not exist or contains no media files.
  */
 export function loadMedienProjects() {
@@ -227,13 +283,14 @@ export function loadMedienProjects() {
       .map((seg) => encodeURIComponent(seg));
     const publicUrl = `/medien/${urlSegments.join('/')}`;
 
-    const { categoryKey, label, priority, order } = parseFilename(
+    const { categoryKey, label, seriesPrefix, priority, order } = parseFilename(
       file.baseName,
       file.folderName
     );
 
     if (!categoriesMap.has(categoryKey)) {
       categoriesMap.set(categoryKey, {
+        key: categoryKey,
         label,
         items: [],
       });
@@ -242,22 +299,18 @@ export function loadMedienProjects() {
     categoriesMap.get(categoryKey).items.push({
       src: publicUrl,
       type: VIDEO_EXTENSIONS.has(file.ext) ? 'video' : 'image',
+      seriesPrefix,
       priority,
       order,
       fileName: file.fileName,
     });
   }
 
-  // Sort items within each category: explicit cover ("startseite1") first, then 1, 2, 3...
   const projects = [];
   const seenSlugs = new Set();
 
   Array.from(categoriesMap.values()).forEach((cat, idx) => {
-    cat.items.sort((a, b) => {
-      if (a.priority !== b.priority) return a.priority - b.priority;
-      if (a.order !== b.order) return a.order - b.order;
-      return a.fileName.localeCompare(b.fileName, 'de', { numeric: true });
-    });
+    const sortedItems = sortCategoryItems(cat.items);
 
     let slug = toSlug(cat.label, idx);
     if (seenSlugs.has(slug)) {
@@ -265,7 +318,27 @@ export function loadMedienProjects() {
     }
     seenSlugs.add(slug);
 
-    const cover = cat.items[0];
+    const cover = sortedItems[0];
+
+    // Collect representative cover slides for each distinct sub-series/video inside this folder
+    // (used when a project has its own dedicated slider row, e.g. DBB Double Header)
+    const subSeriesSlides = [];
+    const seenGroups = new Set();
+    sortedItems.forEach((item, itemIdx) => {
+      if (!seenGroups.has(item._groupKey)) {
+        seenGroups.add(item._groupKey);
+        subSeriesSlides.push({
+          slug,
+          type: item.type,
+          src: item.src,
+          label: cat.label,
+          align: 'middle',
+          wide: false,
+          aspect: 'auto',
+          startIndex: itemIdx,
+        });
+      }
+    });
 
     projects.push({
       slug,
@@ -275,7 +348,8 @@ export function loadMedienProjects() {
       align: 'middle',
       wide: false,
       aspect: 'auto',
-      images: cat.items.map((item, imageIndex) => ({
+      subSeriesSlides,
+      images: sortedItems.map((item, imageIndex) => ({
         src: item.src,
         type: item.type,
         aspect: 'auto',
@@ -285,19 +359,55 @@ export function loadMedienProjects() {
     });
   });
 
-  // Distribute projects across up to 4 horizontal rows
-  const targetRowCount = Math.min(4, Math.max(1, Math.ceil(projects.length / 4)));
-  const rows = Array.from({ length: targetRowCount }, (_, rIdx) => ({
-    id: `row-0${rIdx + 1}`,
-    slides: [],
-  }));
+  // Group into horizontal rows:
+  // Row 1: Initial 3 projects (Samuel BrillenFotos Beyeler, Timon Editorial, Mercedes Avia)
+  // Row 2+: DBB Double Header and any subsequent projects ( max 3 projects per row )
+  const row1Projects = projects.filter((p) => ROW_1_FOLDERS.has(p.slug));
+  const otherProjects = projects.filter((p) => !ROW_1_FOLDERS.has(p.slug));
 
-  projects.forEach((proj, idx) => {
-    const rowIdx = idx % targetRowCount;
-    rows[rowIdx].slides.push({
-      ...proj,
-      rowId: rows[rowIdx].id,
-    });
+  const groupedProjectRows = [];
+  if (row1Projects.length > 0) {
+    groupedProjectRows.push(row1Projects);
+  }
+  for (let i = 0; i < otherProjects.length; i += 3) {
+    groupedProjectRows.push(otherProjects.slice(i, i + 3));
+  }
+
+  const rows = groupedProjectRows.map((projGroup, rIdx) => {
+    const rowId = `row-0${rIdx + 1}`;
+
+    // If a row is dedicated to a single project (like DBB Double Header),
+    // show its sub-series covers/video (or its individual slides) so the slider row has variety!
+    let slides;
+    if (projGroup.length === 1) {
+      const singleProj = projGroup[0];
+      if (singleProj.subSeriesSlides && singleProj.subSeriesSlides.length >= 2) {
+        slides = singleProj.subSeriesSlides.map((s) => ({ ...s, rowId }));
+      } else {
+        slides = singleProj.images.map((img, imgIdx) => ({
+          slug: singleProj.slug,
+          type: img.type,
+          src: img.src,
+          label: singleProj.label,
+          align: 'middle',
+          wide: false,
+          aspect: 'auto',
+          startIndex: imgIdx,
+          rowId,
+        }));
+      }
+    } else {
+      slides = projGroup.map((proj) => ({
+        ...proj,
+        startIndex: 0,
+        rowId,
+      }));
+    }
+
+    return {
+      id: rowId,
+      slides,
+    };
   });
 
   return { rows, projects };

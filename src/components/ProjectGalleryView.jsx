@@ -27,6 +27,17 @@ export default function ProjectGalleryView({ identity, project }) {
   const [activeOverlay, setActiveOverlay] = useState(null);
   const [activeLegal, setActiveLegal] = useState(null);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const slideParam = params.get('slide');
+    if (slideParam !== null) {
+      const parsed = parseInt(slideParam, 10);
+      if (!Number.isNaN(parsed) && parsed >= 0 && parsed < total) {
+        setCurrentIndex(parsed);
+      }
+    }
+  }, [total]);
+
   const gridSectionRef = useRef(null);
   const pointerRef = useRef({
     startX: 0,

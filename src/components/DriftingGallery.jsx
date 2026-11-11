@@ -278,6 +278,10 @@ function DriftingRow({ row, rowIndex }) {
               : 'w-full h-full object-cover';
 
             const projectSlug = toProjectSlug(slide, idx);
+            const projectHref =
+              slide.startIndex && slide.startIndex > 0
+                ? `/projects/${projectSlug}?slide=${slide.startIndex}`
+                : `/projects/${projectSlug}`;
 
             return (
               <div
@@ -285,7 +289,7 @@ function DriftingRow({ row, rowIndex }) {
                 className={`sf-slide ${alignClass} ${slide.wide ? 'sf-wide' : ''}`}
               >
                 <a
-                  href={`/projects/${projectSlug}`}
+                  href={projectHref}
                   draggable={false}
                   onClick={handleSlideClick}
                   className="sf-media-card block cursor-pointer"
