@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { galleryRows, getAllProjects } from '../data/projects.js';
 
 const MEDIA_EXTENSIONS = new Set([
   '.jpg',
@@ -20,12 +21,13 @@ const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v']);
 // Cloudflare Pages has a strict 25 MiB per-file limit
 const MAX_CLOUDFLARE_BYTES = 24.8 * 1024 * 1024;
 
-// Preferred order for Row 1 vs Row 2+ folders
-const ROW_1_FOLDERS = new Set([
+// Preferred order for Row 1 folders
+const ROW_1_ORDER = [
   'samuel-brillenfotos-beyeler',
   'timon-editorial',
   'mercedes-avia',
-]);
+];
+const ROW_1_FOLDERS = new Set(ROW_1_ORDER);
 
 function toSlug(text, fallbackIndex = 0) {
   const slug = String(text || '')
@@ -120,12 +122,13 @@ function parseFilename(baseName, folderName = null) {
  * 3. Within each sub-series, items are sorted by number ascending (`1, 2, 3...`).
  */
 function sortCategoryItems(items) {
-  // Determine rank for each seriesPrefix:
-  // Prefixes that contain `order === 1` come first, then videos, then other prefixes.
   const prefixMeta = new Map();
 
   for (const item of items) {
-    const key = item.type === 'video' && item.priority > 0 ? `__video_${item.fileName}` : item.seriesPrefix;
+    const key =
+      item.type === 'video' && item.priority > 0
+        ? `__video_${item.fileName}`
+        : item.seriesPrefix;
     item._groupKey = key;
 
     if (!prefixMeta.has(key)) {
@@ -148,7 +151,7 @@ function sortCategoryItems(items) {
       const metaA = prefixMeta.get(a._groupKey);
       const metaB = prefixMeta.get(b._groupKey);
 
-      // Group that starts with #1 comes first
+      // Group that starts with #1 comes first (e.g. "Dbb Post 1")
       const aHasOne = metaA.minOrder === 1 ? 0 : 1;
       const bHasOne = metaB.minOrder === 1 ? 0 : 1;
       if (aHasOne !== bHasOne) return aHasOne - bHasOne;
@@ -167,7 +170,8 @@ function sortCategoryItems(items) {
 
 /**
  * Syncs files from `/Medien` to `/public/medien` and returns grouped projects & rows.
- * Returns `null` if `/Medien` does not exist or contains no media files.
+ * - Each folder in `/Medien` is represented by ONE single title photo/video on the start page.
+ * - Remaining slots in Row 2 (and Rows 3 & 4) are filled with black placeholder boxes.
  */
 export function loadMedienProjects() {
   const rootDir = process.cwd();
@@ -306,7 +310,7 @@ export function loadMedienProjects() {
     });
   }
 
-  const projects = [];
+  const medienProjects = [];
   const seenSlugs = new Set();
 
   Array.from(categoriesMap.values()).forEach((cat, idx) => {
@@ -320,27 +324,7 @@ export function loadMedienProjects() {
 
     const cover = sortedItems[0];
 
-    // Collect representative cover slides for each distinct sub-series/video inside this folder
-    // (used when a project has its own dedicated slider row, e.g. DBB Double Header)
-    const subSeriesSlides = [];
-    const seenGroups = new Set();
-    sortedItems.forEach((item, itemIdx) => {
-      if (!seenGroups.has(item._groupKey)) {
-        seenGroups.add(item._groupKey);
-        subSeriesSlides.push({
-          slug,
-          type: item.type,
-          src: item.src,
-          label: cat.label,
-          align: 'middle',
-          wide: false,
-          aspect: 'auto',
-          startIndex: itemIdx,
-        });
-      }
-    });
-
-    projects.push({
+    medienProjects.push({
       slug,
       type: cover.type,
       src: cover.src,
@@ -348,7 +332,7 @@ export function loadMedienProjects() {
       align: 'middle',
       wide: false,
       aspect: 'auto',
-      subSeriesSlides,
+      startIndex: 0,
       images: sortedItems.map((item, imageIndex) => ({
         src: item.src,
         type: item.type,
@@ -359,56 +343,66 @@ export function loadMedienProjects() {
     });
   });
 
-  // Group into horizontal rows:
-  // Row 1: Initial 3 projects (Samuel BrillenFotos Beyeler, Timon Editorial, Mercedes Avia)
-  // Row 2+: DBB Double Header and any subsequent projects ( max 3 projects per row )
-  const row1Projects = projects.filter((p) => ROW_1_FOLDERS.has(p.slug));
-  const otherProjects = projects.filter((p) => !ROW_1_FOLDERS.has(p.slug));
+  // Sort Row 1 projects in their fixed order (Samuel, Timon, Mercedes)
+  const row1Projects = medienProjects
+    .filter((p) => ROW_1_FOLDERS.has(p.slug))
+    .sort((a, b) => ROW_1_ORDER.indexOf(a.slug) - ROW_1_ORDER.indexOf(b.slug));
 
-  const groupedProjectRows = [];
-  if (row1Projects.length > 0) {
-    groupedProjectRows.push(row1Projects);
-  }
-  for (let i = 0; i < otherProjects.length; i += 3) {
-    groupedProjectRows.push(otherProjects.slice(i, i + 3));
-  }
+  // Remaining Medien projects (e.g. DBB Double Header and future folders) go into Row 2+
+  const extraProjects = medienProjects.filter((p) => !ROW_1_FOLDERS.has(p.slug));
 
-  const rows = groupedProjectRows.map((projGroup, rIdx) => {
-    const rowId = `row-0${rIdx + 1}`;
+  // Build the 4 rows:
+  // - Row 1: row1Projects (if any placeholders are needed when < 3, fill from galleryRows[0])
+  // - Row 2..4: fill first with extraProjects (1 title photo per project, e.g. DBB Double Header),
+  //   and fill all remaining slots with the black placeholders from galleryRows!
+  const rows = [];
 
-    // If a row is dedicated to a single project (like DBB Double Header),
-    // show its sub-series covers/video (or its individual slides) so the slider row has variety!
-    let slides;
-    if (projGroup.length === 1) {
-      const singleProj = projGroup[0];
-      if (singleProj.subSeriesSlides && singleProj.subSeriesSlides.length >= 2) {
-        slides = singleProj.subSeriesSlides.map((s) => ({ ...s, rowId }));
-      } else {
-        slides = singleProj.images.map((img, imgIdx) => ({
-          slug: singleProj.slug,
-          type: img.type,
-          src: img.src,
-          label: singleProj.label,
-          align: 'middle',
-          wide: false,
-          aspect: 'auto',
-          startIndex: imgIdx,
+  // Row 1
+  const row1FallbackPlaceholders = (galleryRows[0]?.slides || []).slice(row1Projects.length);
+  rows.push({
+    id: 'row-01',
+    slides:
+      row1Projects.length >= 3
+        ? row1Projects.map((p) => ({ ...p, rowId: 'row-01' }))
+        : [...row1Projects, ...row1FallbackPlaceholders].map((p) => ({
+            ...p,
+            rowId: 'row-01',
+          })),
+  });
+
+  // Rows 2, 3, 4: Place extraProjects (like DBB Double Header in Row 2) and fill the rest with black placeholders
+  let extraCursor = 0;
+  for (let rIdx = 1; rIdx < galleryRows.length; rIdx++) {
+    const templateRow = galleryRows[rIdx];
+    const rowId = templateRow.id || `row-0${rIdx + 1}`;
+    const templateSlides = templateRow.slides || [];
+    const slides = [];
+
+    for (let sIdx = 0; sIdx < templateSlides.length; sIdx++) {
+      if (extraCursor < extraProjects.length) {
+        slides.push({
+          ...extraProjects[extraCursor],
           rowId,
-        }));
+        });
+        extraCursor++;
+      } else {
+        slides.push({
+          ...templateSlides[sIdx],
+          align: 'middle',
+          rowId,
+        });
       }
-    } else {
-      slides = projGroup.map((proj) => ({
-        ...proj,
-        startIndex: 0,
-        rowId,
-      }));
     }
 
-    return {
+    rows.push({
       id: rowId,
       slides,
-    };
-  });
+    });
+  }
+
+  // Combine real Medien projects + placeholder projects so every clickable card has a valid static page
+  const placeholderProjects = getAllProjects().filter((p) => !seenSlugs.has(p.slug));
+  const projects = [...medienProjects, ...placeholderProjects];
 
   return { rows, projects };
 }
