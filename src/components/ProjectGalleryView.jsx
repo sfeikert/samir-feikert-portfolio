@@ -117,17 +117,43 @@ export default function ProjectGalleryView({ identity, project }) {
     pointerRef.current.isDown = true;
     pointerRef.current.startX = e.clientX;
     pointerRef.current.startY = e.clientY;
+    pointerRef.current.lastX = e.clientX;
+    pointerRef.current.lastY = e.clientY;
+  };
+
+  const handleStagePointerMove = (e) => {
+    if (!pointerRef.current.isDown) return;
+    pointerRef.current.lastX = e.clientX;
+    pointerRef.current.lastY = e.clientY;
+  };
+
+  const handleStagePointerCancel = () => {
+    if (!pointerRef.current.isDown) return;
+    pointerRef.current.isDown = false;
+
+    const dx = pointerRef.current.lastX - pointerRef.current.startX;
+    const dy = pointerRef.current.lastY - pointerRef.current.startY;
+
+    if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) * 1.1) {
+      if (dx < 0) {
+        goNext();
+      } else {
+        goPrev();
+      }
+    }
   };
 
   const handleStagePointerUp = (e) => {
     if (!pointerRef.current.isDown) return;
     pointerRef.current.isDown = false;
 
-    const dx = e.clientX - pointerRef.current.startX;
-    const dy = e.clientY - pointerRef.current.startY;
+    const endX = e.clientX ?? pointerRef.current.lastX;
+    const endY = e.clientY ?? pointerRef.current.lastY;
+    const dx = endX - pointerRef.current.startX;
+    const dy = endY - pointerRef.current.startY;
 
     // Horizontal swipe on touch/trackpad
-    if (Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+    if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) * 1.1) {
       if (dx < 0) {
         goNext();
       } else {
@@ -141,7 +167,7 @@ export default function ProjectGalleryView({ identity, project }) {
 
     // Click / tap: left 35% of stage goes back, right 65% advances to next photo
     const rect = e.currentTarget.getBoundingClientRect();
-    const relX = e.clientX - rect.left;
+    const relX = endX - rect.left;
     if (relX < rect.width * 0.35) {
       goPrev();
     } else {
@@ -291,7 +317,9 @@ export default function ProjectGalleryView({ identity, project }) {
         <main
           id="main-content"
           onPointerDown={handleStagePointerDown}
+          onPointerMove={handleStagePointerMove}
           onPointerUp={handleStagePointerUp}
+          onPointerCancel={handleStagePointerCancel}
           title="Click to step through images"
           style={{ touchAction: 'pan-y' }}
           className="relative flex-1 w-full flex items-center justify-center px-6 sm:px-12 lg:px-20 overflow-hidden cursor-pointer"

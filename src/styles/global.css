@@ -142,6 +142,8 @@
   -webkit-user-select: none;
 }
 
+.sf-slider-viewport,
+.sf-slider-viewport a,
 .sf-slider-viewport * {
   touch-action: pan-y;
 }

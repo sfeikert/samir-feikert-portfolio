@@ -28,8 +28,8 @@ function DriftingRow({ row, rowIndex }) {
     x: 0,
     cycleWidth: 0,
     isPointerDown: false,
+    pointerType: null,
     isDragging: false,
-    didDrag: false,
     axis: null,
     startX: 0,
     startY: 0,
@@ -38,6 +38,8 @@ function DriftingRow({ row, rowIndex }) {
     lastPointerTime: 0,
     velocity: 0,
     momentumVel: 0,
+    pauseUntil: 0,
+    suppressClickUntil: 0,
     autoDrift: true,
   });
 
@@ -53,6 +55,8 @@ function DriftingRow({ row, rowIndex }) {
     if (!viewport || !track) return;
 
     const st = stateRef.current;
+    const PAUSE_AFTER_INTERACTION_MS = 2200;
+    const RESUME_RAMP_MS = 900;
 
     let isVisible = true;
 
@@ -70,6 +74,11 @@ function DriftingRow({ row, rowIndex }) {
       st.x = mod - 2 * w;
     };
 
+    const applyTransform = () => {
+      normalizePosition();
+      track.style.transform = `translate3d(${st.x}px, 0, 0)`;
+    };
+
     const measureTrack = () => {
       const totalWidth = track.scrollWidth;
       if (!totalWidth) return;
@@ -80,8 +89,7 @@ function DriftingRow({ row, rowIndex }) {
       } else {
         st.cycleWidth = newCycleWidth;
       }
-      normalizePosition();
-      track.style.transform = `translate3d(${st.x}px, 0, 0)`;
+      applyTransform();
     };
 
     const initVideos = (shouldPlay) => {
@@ -120,6 +128,184 @@ function DriftingRow({ row, rowIndex }) {
     );
     io.observe(viewport);
 
+    // =========================================================================
+    // 1. TOUCH INTERACTION (iOS Safari / Android — non-passive touchmove)
+    // =========================================================================
+    const onTouchStart = (e) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const now = performance.now();
+
+      st.isPointerDown = true;
+      st.pointerType = 'touch';
+      st.isDragging = false;
+      st.axis = null;
+      st.startX = touch.clientX;
+      st.startY = touch.clientY;
+      st.dragOriginX = st.x;
+      st.lastPointerX = touch.clientX;
+      st.lastPointerTime = now;
+      st.velocity = 0;
+      st.momentumVel = 0;
+    };
+
+    const onTouchMove = (e) => {
+      if (!st.isPointerDown || st.pointerType !== 'touch' || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - st.startX;
+      const dy = touch.clientY - st.startY;
+      const now = performance.now();
+      const dt = now - st.lastPointerTime;
+
+      if (!st.axis) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        st.axis = Math.abs(dx) >= Math.abs(dy) * 0.7 ? 'x' : 'y';
+      }
+
+      if (st.axis === 'y') {
+        // User is scrolling the page vertically — release slider tracking
+        st.isPointerDown = false;
+        st.isDragging = false;
+        return;
+      }
+
+      if (st.axis === 'x') {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+
+        if (!st.isDragging) {
+          st.isDragging = true;
+          st.dragOriginX = st.x - dx;
+          setDraggingClass(true);
+        }
+
+        if (dt > 0) {
+          const instVel = (touch.clientX - st.lastPointerX) / dt;
+          st.velocity = st.velocity * 0.6 + instVel * 0.4;
+          st.lastPointerX = touch.clientX;
+          st.lastPointerTime = now;
+        }
+
+        st.x = st.dragOriginX + dx;
+        st.pauseUntil = now + PAUSE_AFTER_INTERACTION_MS;
+        applyTransform();
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (!st.isPointerDown || st.pointerType !== 'touch') return;
+      const now = performance.now();
+      st.isPointerDown = false;
+
+      if (st.isDragging) {
+        st.isDragging = false;
+        setDraggingClass(false);
+        st.suppressClickUntil = now + 120;
+
+        // Only apply flick momentum if the finger was still moving right before release
+        const timeSinceLastMove = now - st.lastPointerTime;
+        if (timeSinceLastMove < 70 && Math.abs(st.velocity) > 0.12) {
+          st.momentumVel = Math.max(-2.2, Math.min(2.2, st.velocity));
+        } else {
+          st.momentumVel = 0;
+        }
+
+        // Pause auto-drift for ~2.2s so the user can inspect and tap the photo
+        st.pauseUntil = now + PAUSE_AFTER_INTERACTION_MS;
+      }
+
+      st.axis = null;
+    };
+
+    // =========================================================================
+    // 2. MOUSE DRAG INTERACTION (Desktop / Laptop — stops dead on release)
+    // =========================================================================
+    const onMouseDown = (e) => {
+      if (e.button !== 0) return;
+      const now = performance.now();
+
+      st.isPointerDown = true;
+      st.pointerType = 'mouse';
+      st.isDragging = false;
+      st.axis = null;
+      st.startX = e.clientX;
+      st.startY = e.clientY;
+      st.dragOriginX = st.x;
+      st.lastPointerX = e.clientX;
+      st.lastPointerTime = now;
+      st.velocity = 0;
+      st.momentumVel = 0;
+    };
+
+    const onWindowMouseMove = (e) => {
+      if (!st.isPointerDown || st.pointerType !== 'mouse') return;
+      const dx = e.clientX - st.startX;
+      const dy = e.clientY - st.startY;
+      const now = performance.now();
+
+      if (!st.axis) {
+        if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+        st.axis = 'x';
+      }
+
+      if (!st.isDragging) {
+        st.isDragging = true;
+        st.dragOriginX = st.x - dx;
+        setDraggingClass(true);
+      }
+
+      e.preventDefault();
+      st.lastPointerX = e.clientX;
+      st.lastPointerTime = now;
+      st.x = st.dragOriginX + dx;
+      st.pauseUntil = now + PAUSE_AFTER_INTERACTION_MS;
+      applyTransform();
+    };
+
+    const onWindowMouseUp = () => {
+      if (!st.isPointerDown || st.pointerType !== 'mouse') return;
+      const now = performance.now();
+      st.isPointerDown = false;
+
+      if (st.isDragging) {
+        st.isDragging = false;
+        setDraggingClass(false);
+        st.suppressClickUntil = now + 120;
+        // Stop immediately where the mouse stopped so the user can click the image
+        st.momentumVel = 0;
+        st.pauseUntil = now + PAUSE_AFTER_INTERACTION_MS;
+      }
+
+      st.axis = null;
+    };
+
+    // =========================================================================
+    // 3. TRACKPAD TWO-FINGER HORIZONTAL SWIPE (Laptop)
+    // =========================================================================
+    const onWheel = (e) => {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || Math.abs(e.deltaX) < 1.5) {
+        return;
+      }
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      const now = performance.now();
+      st.momentumVel = 0;
+      st.x -= e.deltaX;
+      st.pauseUntil = now + PAUSE_AFTER_INTERACTION_MS;
+      applyTransform();
+    };
+
+    viewport.addEventListener('touchstart', onTouchStart, { passive: true });
+    viewport.addEventListener('touchmove', onTouchMove, { passive: false });
+    viewport.addEventListener('touchend', onTouchEnd, { passive: true });
+    viewport.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    viewport.addEventListener('mousedown', onMouseDown);
+    viewport.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('mousemove', onWindowMouseMove);
+    window.addEventListener('mouseup', onWindowMouseUp);
+
     let rafId;
     let prevTime = performance.now();
     const baseSpeedPerFrame = 0.35;
@@ -128,18 +314,25 @@ function DriftingRow({ row, rowIndex }) {
       const dtFrames = Math.min(2.5, Math.max(0.1, (now - prevTime) / 16.6667));
       prevTime = now;
 
-      if (isVisible && !st.isDragging) {
+      if (isVisible && !st.isDragging && !st.isPointerDown) {
         if (Math.abs(st.momentumVel) > 0.02) {
-          st.x += st.momentumVel * dtFrames * 14;
-          st.momentumVel *= Math.pow(0.91, dtFrames);
+          st.x += st.momentumVel * dtFrames * 13;
+          st.momentumVel *= Math.pow(0.89, dtFrames);
+          // Keep resetting the 2.2s pause timer until the touch flick comes to a complete stop
+          st.pauseUntil = now + PAUSE_AFTER_INTERACTION_MS;
+          applyTransform();
         } else {
           st.momentumVel = 0;
-          if (st.autoDrift) {
-            st.x += baseSpeedPerFrame * dtFrames;
+          if (st.autoDrift && now >= st.pauseUntil) {
+            const elapsedSinceResume = now - st.pauseUntil;
+            const rampFactor =
+              st.pauseUntil > 0
+                ? Math.min(1, elapsedSinceResume / RESUME_RAMP_MS)
+                : 1;
+            st.x += baseSpeedPerFrame * rampFactor * dtFrames;
+            applyTransform();
           }
         }
-        normalizePosition();
-        track.style.transform = `translate3d(${st.x}px, 0, 0)`;
       }
 
       rafId = requestAnimationFrame(tick);
@@ -151,105 +344,20 @@ function DriftingRow({ row, rowIndex }) {
       cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
       io.disconnect();
+      viewport.removeEventListener('touchstart', onTouchStart);
+      viewport.removeEventListener('touchmove', onTouchMove);
+      viewport.removeEventListener('touchend', onTouchEnd);
+      viewport.removeEventListener('touchcancel', onTouchEnd);
+      viewport.removeEventListener('mousedown', onMouseDown);
+      viewport.removeEventListener('wheel', onWheel);
+      window.removeEventListener('mousemove', onWindowMouseMove);
+      window.removeEventListener('mouseup', onWindowMouseUp);
     };
   }, [rowIndex]);
 
-  const handlePointerDown = (e) => {
-    if (e.button !== undefined && e.button !== 0) return;
-    const st = stateRef.current;
-    st.isPointerDown = true;
-    st.isDragging = false;
-    st.didDrag = false;
-    st.axis = null;
-    st.startX = e.clientX;
-    st.startY = e.clientY;
-    st.dragOriginX = st.x;
-    st.lastPointerX = e.clientX;
-    st.lastPointerTime = performance.now();
-    st.velocity = 0;
-    st.momentumVel = 0;
-  };
-
-  const handlePointerMove = (e) => {
-    const st = stateRef.current;
-    if (!st.isPointerDown) return;
-
-    const dx = e.clientX - st.startX;
-    const dy = e.clientY - st.startY;
-    const now = performance.now();
-    const dt = now - st.lastPointerTime;
-
-    if (dt > 0) {
-      const instVel = (e.clientX - st.lastPointerX) / dt;
-      st.velocity = st.velocity * 0.65 + instVel * 0.35;
-      st.lastPointerX = e.clientX;
-      st.lastPointerTime = now;
-    }
-
-    if (!st.axis) {
-      const threshold = e.pointerType === 'touch' ? 10 : 5;
-      if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
-      st.axis = Math.abs(dx) >= Math.abs(dy) * 0.85 ? 'x' : 'y';
-    }
-
-    if (st.axis === 'x') {
-      if (!st.isDragging) {
-        st.isDragging = true;
-        st.didDrag = true;
-        setDraggingClass(true);
-        if (viewportRef.current?.setPointerCapture && e.pointerId !== undefined) {
-          try {
-            viewportRef.current.setPointerCapture(e.pointerId);
-          } catch {}
-        }
-      }
-
-      e.preventDefault();
-      st.x = st.dragOriginX + dx;
-      const w = st.cycleWidth;
-      if (w) {
-        const mod = ((st.x % w) + w) % w;
-        st.x = mod - 2 * w;
-      }
-      if (trackRef.current) {
-        trackRef.current.style.transform = `translate3d(${st.x}px, 0, 0)`;
-      }
-    }
-  };
-
-  const finishPointer = (e) => {
-    const st = stateRef.current;
-    if (!st.isPointerDown) return;
-    st.isPointerDown = false;
-
-    if (st.isDragging) {
-      st.isDragging = false;
-      setDraggingClass(false);
-      st.momentumVel = Math.max(-2.6, Math.min(2.6, st.velocity));
-    }
-
-    st.axis = null;
-    if (
-      viewportRef.current?.releasePointerCapture &&
-      e?.pointerId !== undefined &&
-      viewportRef.current.hasPointerCapture?.(e.pointerId)
-    ) {
-      try {
-        viewportRef.current.releasePointerCapture(e.pointerId);
-      } catch {}
-    }
-  };
-
-  const handlePointerLeave = (e) => {
-    // Touch pointers should not trigger cancel on leave (finger movement can cross boundaries)
-    if (e.pointerType === 'touch') return;
-    finishPointer(e);
-  };
-
   const handleSlideClick = (e) => {
-    if (stateRef.current.didDrag) {
+    if (performance.now() < stateRef.current.suppressClickUntil) {
       e.preventDefault();
-      stateRef.current.didDrag = false;
     }
   };
 
@@ -257,11 +365,6 @@ function DriftingRow({ row, rowIndex }) {
     <section data-gallery-section className="sf-gallery-row sf-snap-row">
       <div
         ref={viewportRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={finishPointer}
-        onPointerCancel={finishPointer}
-        onPointerLeave={handlePointerLeave}
         onDragStart={(e) => e.preventDefault()}
         className={`sf-slider-viewport ${draggingClass ? 'is-dragging' : ''}`}
       >
