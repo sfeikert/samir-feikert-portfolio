@@ -23,6 +23,24 @@ export default function HeaderBar({ identity }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!mobileDrawerOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setMobileDrawerOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [mobileDrawerOpen]);
+
   const handleScrollToTop = (e) => {
     e.preventDefault();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -30,22 +48,28 @@ export default function HeaderBar({ identity }) {
 
   return (
     <>
-      <header className="relative z-30 w-full px-6 sm:px-8 lg:px-10 py-6">
+      <header className="relative z-30 w-full px-6 sm:px-8 lg:px-10 py-4 sm:py-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-7">
-            {/* Desktop Toggle */}
+          <div className="flex items-center gap-5 sm:gap-6">
+            {/* Desktop Toggle (44x44px hit target with negative left margin to preserve visual alignment) */}
             <button
               type="button"
               onClick={() => setMenuOpen((prev) => !prev)}
+              aria-expanded={menuOpen}
               aria-label={menuOpen ? 'Collapse navigation' : 'Expand navigation'}
-              className="hidden lg:inline-flex items-center justify-center w-6 h-6 text-ink hover:text-ink-muted transition-colors"
+              className="hidden lg:inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-3 text-ink hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
             >
               {menuOpen ? (
-                <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="1.5">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 16 16"
+                  className="w-3.5 h-3.5 fill-none stroke-current"
+                  strokeWidth="1.5"
+                >
                   <path d="M2 2L14 14M14 2L2 14" />
                 </svg>
               ) : (
-                <svg viewBox="0 0 20 14" className="w-4 h-3 fill-current">
+                <svg aria-hidden="true" viewBox="0 0 20 14" className="w-4 h-3 fill-current">
                   <rect y="0" width="20" height="1.5" />
                   <rect y="6" width="20" height="1.5" />
                   <rect y="12" width="20" height="1.5" />
@@ -53,19 +77,25 @@ export default function HeaderBar({ identity }) {
               )}
             </button>
 
-            {/* Mobile Toggle */}
+            {/* Mobile Toggle (44x44px hit target) */}
             <button
               type="button"
               onClick={() => setMobileDrawerOpen((prev) => !prev)}
-              aria-label="Toggle menu"
-              className="lg:hidden inline-flex items-center justify-center w-6 h-6 text-ink"
+              aria-expanded={mobileDrawerOpen}
+              aria-label={mobileDrawerOpen ? 'Close menu' : 'Open menu'}
+              className="lg:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-3 text-ink active:opacity-70 transition-opacity cursor-pointer"
             >
               {mobileDrawerOpen ? (
-                <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="1.5">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 16 16"
+                  className="w-3.5 h-3.5 fill-none stroke-current"
+                  strokeWidth="1.5"
+                >
                   <path d="M2 2L14 14M14 2L2 14" />
                 </svg>
               ) : (
-                <svg viewBox="0 0 20 14" className="w-4 h-3 fill-current">
+                <svg aria-hidden="true" viewBox="0 0 20 14" className="w-4 h-3 fill-current">
                   <rect y="0" width="20" height="1.5" />
                   <rect y="6" width="20" height="1.5" />
                   <rect y="12" width="20" height="1.5" />
@@ -73,7 +103,7 @@ export default function HeaderBar({ identity }) {
               )}
             </button>
 
-            {/* Desktop Horizontal Links (intentional placeholders until subpages are built) */}
+            {/* Desktop Horizontal Links */}
             <AnimatePresence initial={false}>
               {menuOpen && (
                 <motion.nav
@@ -82,19 +112,19 @@ export default function HeaderBar({ identity }) {
                   exit={{ opacity: 0, x: -8 }}
                   transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                   aria-label="Primary navigation"
-                  className="hidden lg:flex items-center gap-8 font-sans font-normal text-[1rem] tracking-[0.12px] text-ink"
+                  className="hidden lg:flex items-center gap-7 font-sans font-normal text-[1rem] tracking-[0.12px] text-ink"
                 >
                   <button
                     type="button"
                     onClick={() => setActiveOverlay('about')}
-                    className="hover:text-ink-muted transition-colors cursor-pointer"
+                    className="py-2 px-1 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
                   >
                     About
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveOverlay('exhibition')}
-                    className="hover:text-ink-muted transition-colors cursor-pointer"
+                    className="py-2 px-1 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
                   >
                     Exhibition
                   </button>
@@ -108,12 +138,13 @@ export default function HeaderBar({ identity }) {
       {/* Mobile Fullscreen Menu */}
       <AnimatePresence>
         {mobileDrawerOpen && (
-          <motion.div
+          <motion.nav
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.22 }}
-            className="fixed inset-0 top-16 z-40 bg-white px-6 py-10 lg:hidden flex flex-col gap-7 font-display font-normal uppercase text-3xl tracking-[0em] text-ink"
+            aria-label="Mobile navigation"
+            className="fixed inset-0 top-16 z-40 bg-white px-6 py-10 lg:hidden flex flex-col gap-5 font-display font-normal uppercase text-3xl tracking-[0em] text-ink"
           >
             <button
               type="button"
@@ -121,7 +152,7 @@ export default function HeaderBar({ identity }) {
                 setActiveOverlay('about');
                 setMobileDrawerOpen(false);
               }}
-              className="text-left hover:text-ink-muted transition-colors cursor-pointer"
+              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
             >
               About
             </button>
@@ -131,18 +162,18 @@ export default function HeaderBar({ identity }) {
                 setActiveOverlay('exhibition');
                 setMobileDrawerOpen(false);
               }}
-              className="text-left hover:text-ink-muted transition-colors cursor-pointer"
+              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
             >
               Exhibition
             </button>
             <a
               href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
               onClick={() => setMobileDrawerOpen(false)}
-              className="text-left hover:text-ink-muted transition-colors cursor-pointer"
+              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
             >
               Anfrage
             </a>
-          </motion.div>
+          </motion.nav>
         )}
       </AnimatePresence>
 
@@ -170,7 +201,7 @@ export default function HeaderBar({ identity }) {
       </AnimatePresence>
 
       {/* Top-Right Sticky Controls: "SF" Monogram + Apple Pill "Anfrage" */}
-      <div className="fixed top-[max(1.25rem,env(safe-area-inset-top))] right-[max(1.25rem,env(safe-area-inset-right))] sm:top-6 sm:right-8 lg:right-10 z-30 flex items-center gap-3">
+      <div className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1.25rem,env(safe-area-inset-right))] sm:top-5 sm:right-8 lg:right-10 z-30 flex items-center gap-2 sm:gap-3">
         {/* Floating "SF" (fades in past 280px) */}
         <div
           className={`transition-opacity duration-300 ${
@@ -180,7 +211,7 @@ export default function HeaderBar({ identity }) {
           <button
             type="button"
             onClick={handleScrollToTop}
-            className="inline-block text-right leading-none group py-1 cursor-pointer"
+            className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-right leading-none group active:opacity-70 cursor-pointer"
             aria-label="Scroll to top"
           >
             <span className="block font-display font-medium uppercase tracking-[0.04em] text-sm sm:text-base text-ink group-hover:text-ink-muted transition-colors">
@@ -192,7 +223,7 @@ export default function HeaderBar({ identity }) {
         {/* Apple-style Pill Button "Anfrage" */}
         <a
           href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
-          className="inline-flex items-center justify-center font-sans font-normal text-xs tracking-[0.14px] text-ink bg-white/85 hover:bg-white border border-ink/20 hover:border-ink/50 backdrop-blur-sm rounded-full px-3.5 py-1.5 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+          className="inline-flex items-center justify-center min-h-[38px] font-sans font-normal text-xs tracking-[0.14px] text-ink bg-white/85 hover:bg-white active:opacity-80 border border-ink/20 hover:border-ink/50 backdrop-blur-sm rounded-full px-4 py-1.5 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
         >
           Anfrage
         </a>

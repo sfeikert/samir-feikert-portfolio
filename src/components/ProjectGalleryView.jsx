@@ -55,10 +55,25 @@ export default function ProjectGalleryView({ identity, project }) {
     setCurrentIndex((prev) => (prev - 1 + total) % total);
   }, [total]);
 
-  // Keyboard navigation (ArrowRight -> next, ArrowLeft -> prev, Escape -> back to start page)
+  useEffect(() => {
+    if (!mobileDrawerOpen) return;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileDrawerOpen]);
+
+  // Keyboard navigation (ArrowRight -> next, ArrowLeft -> prev, Escape -> close drawer or back to start page)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (activeOverlay || activeLegal || mobileDrawerOpen) return;
+      if (activeOverlay || activeLegal) return;
+
+      if (mobileDrawerOpen) {
+        if (e.key === 'Escape') {
+          setMobileDrawerOpen(false);
+        }
+        return;
+      }
 
       if (e.key === 'ArrowRight') {
         e.preventDefault();
@@ -152,17 +167,19 @@ export default function ProjectGalleryView({ identity, project }) {
          ===================================================================== */}
       <section className="relative h-dvh min-h-[540px] w-full flex flex-col justify-between overflow-hidden">
         {/* Top Header Bar */}
-        <header className="relative z-30 w-full px-6 sm:px-8 lg:px-10 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-6 sm:gap-7">
-            {/* Desktop Toggle */}
+        <header className="relative z-30 w-full px-6 sm:px-8 lg:px-10 pt-[max(1rem,env(safe-area-inset-top))] pb-3 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-5 sm:gap-6">
+            {/* Desktop Toggle (44x44px hit target) */}
             <button
               type="button"
               onClick={() => setMenuOpen((prev) => !prev)}
+              aria-expanded={menuOpen}
               aria-label={menuOpen ? 'Collapse navigation' : 'Expand navigation'}
-              className="hidden lg:inline-flex items-center justify-center w-6 h-6 text-ink hover:text-ink-muted transition-colors cursor-pointer"
+              className="hidden lg:inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-3 text-ink hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
             >
               {menuOpen ? (
                 <svg
+                  aria-hidden="true"
                   viewBox="0 0 16 16"
                   className="w-3.5 h-3.5 fill-none stroke-current"
                   strokeWidth="1.5"
@@ -170,7 +187,7 @@ export default function ProjectGalleryView({ identity, project }) {
                   <path d="M2 2L14 14M14 2L2 14" />
                 </svg>
               ) : (
-                <svg viewBox="0 0 20 14" className="w-4 h-3 fill-current">
+                <svg aria-hidden="true" viewBox="0 0 20 14" className="w-4 h-3 fill-current">
                   <rect y="0" width="20" height="1.5" />
                   <rect y="6" width="20" height="1.5" />
                   <rect y="12" width="20" height="1.5" />
@@ -178,16 +195,18 @@ export default function ProjectGalleryView({ identity, project }) {
               )}
             </button>
 
-            {/* Mobile Toggle + Direct Back Link */}
-            <div className="flex lg:hidden items-center gap-5">
+            {/* Mobile Toggle + Direct Back Link (44x44px hit targets) */}
+            <div className="flex lg:hidden items-center gap-3">
               <button
                 type="button"
                 onClick={() => setMobileDrawerOpen((prev) => !prev)}
-                aria-label="Toggle menu"
-                className="inline-flex items-center justify-center w-6 h-6 text-ink"
+                aria-expanded={mobileDrawerOpen}
+                aria-label={mobileDrawerOpen ? 'Close menu' : 'Open menu'}
+                className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-3 text-ink active:opacity-70 transition-opacity cursor-pointer"
               >
                 {mobileDrawerOpen ? (
                   <svg
+                    aria-hidden="true"
                     viewBox="0 0 16 16"
                     className="w-3.5 h-3.5 fill-none stroke-current"
                     strokeWidth="1.5"
@@ -195,7 +214,7 @@ export default function ProjectGalleryView({ identity, project }) {
                     <path d="M2 2L14 14M14 2L2 14" />
                   </svg>
                 ) : (
-                  <svg viewBox="0 0 20 14" className="w-4 h-3 fill-current">
+                  <svg aria-hidden="true" viewBox="0 0 20 14" className="w-4 h-3 fill-current">
                     <rect y="0" width="20" height="1.5" />
                     <rect y="6" width="20" height="1.5" />
                     <rect y="12" width="20" height="1.5" />
@@ -205,7 +224,7 @@ export default function ProjectGalleryView({ identity, project }) {
 
               <a
                 href="/"
-                className="font-sans font-normal text-xs uppercase tracking-[0.12px] text-ink-muted hover:text-ink transition-colors"
+                className="inline-flex items-center min-h-[44px] px-1 font-sans font-normal text-xs uppercase tracking-[0.12px] text-ink-muted hover:text-ink active:opacity-70 transition-colors"
               >
                 ← Overview
               </a>
@@ -220,25 +239,25 @@ export default function ProjectGalleryView({ identity, project }) {
                   exit={{ opacity: 0, x: -8 }}
                   transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                   aria-label="Primary navigation"
-                  className="hidden lg:flex items-center gap-8 font-sans font-normal text-[1rem] tracking-[0.12px] text-ink"
+                  className="hidden lg:flex items-center gap-7 font-sans font-normal text-[1rem] tracking-[0.12px] text-ink"
                 >
                   <a
                     href="/"
-                    className="text-ink-muted hover:text-ink transition-colors cursor-pointer"
+                    className="py-2 px-1 text-ink-muted hover:text-ink active:opacity-70 transition-colors cursor-pointer"
                   >
                     ← Overview
                   </a>
                   <button
                     type="button"
                     onClick={() => setActiveOverlay('about')}
-                    className="hover:text-ink-muted transition-colors cursor-pointer"
+                    className="py-2 px-1 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
                   >
                     About
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveOverlay('exhibition')}
-                    className="hover:text-ink-muted transition-colors cursor-pointer"
+                    className="py-2 px-1 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
                   >
                     Exhibition
                   </button>
@@ -248,11 +267,11 @@ export default function ProjectGalleryView({ identity, project }) {
           </div>
 
           {/* Top-Right Controls: "SF" Monogram (links to /) + Apple Pill "Anfrage" */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <a
               href="/"
               aria-label="Back to start page"
-              className="inline-block text-right leading-none group py-1 cursor-pointer"
+              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-right leading-none group active:opacity-70 cursor-pointer"
             >
               <span className="block font-display font-medium uppercase tracking-[0.04em] text-sm sm:text-base text-ink group-hover:text-ink-muted transition-colors">
                 SF
@@ -261,7 +280,7 @@ export default function ProjectGalleryView({ identity, project }) {
 
             <a
               href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
-              className="inline-flex items-center justify-center font-sans font-normal text-xs tracking-[0.14px] text-ink bg-white/85 hover:bg-white border border-ink/20 hover:border-ink/50 backdrop-blur-sm rounded-full px-3.5 py-1.5 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              className="inline-flex items-center justify-center min-h-[38px] font-sans font-normal text-xs tracking-[0.14px] text-ink bg-white/85 hover:bg-white active:opacity-80 border border-ink/20 hover:border-ink/50 backdrop-blur-sm rounded-full px-4 py-1.5 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
             >
               Anfrage
             </a>
@@ -270,6 +289,7 @@ export default function ProjectGalleryView({ identity, project }) {
 
         {/* Main Interactive Single-Image Stage (Click or Swipe to Step Through — Zero White Flash) */}
         <main
+          id="main-content"
           onPointerDown={handleStagePointerDown}
           onPointerUp={handleStagePointerUp}
           title="Click to step through images"
@@ -365,7 +385,7 @@ export default function ProjectGalleryView({ identity, project }) {
         </main>
 
         {/* Bottom Bar of the Stage: Project Title, Step Counter & Scroll-Down Trigger */}
-        <div className="relative z-30 w-full px-6 sm:px-8 lg:px-10 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-6 flex items-center justify-between gap-4 shrink-0">
+        <div className="relative z-30 w-full px-6 sm:px-8 lg:px-10 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-5 flex items-center justify-between gap-4 shrink-0">
           {/* Left: Project Title */}
           <div className="flex items-center gap-3 min-w-0">
             <h1 className="font-sans font-normal text-sm sm:text-[0.95rem] tracking-[0.12px] text-ink truncate">
@@ -378,14 +398,15 @@ export default function ProjectGalleryView({ identity, project }) {
             )}
           </div>
 
-          {/* Center: Scroll-Down Chevron to All Images Grid */}
+          {/* Center: Scroll-Down Chevron to All Images Grid (44x44px hit target) */}
           <button
             type="button"
             onClick={handleScrollToGrid}
             aria-label="Scroll down to view all project images"
-            className="p-2 text-ink hover:text-ink-muted transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-ink hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
           >
             <svg
+              aria-hidden="true"
               viewBox="0 0 13 8"
               className="w-4 h-2.5 fill-none stroke-current"
               strokeWidth="1.2"
@@ -394,13 +415,13 @@ export default function ProjectGalleryView({ identity, project }) {
             </svg>
           </button>
 
-          {/* Right: Prev / Counter / Next Controls */}
-          <div className="flex items-center gap-3 sm:gap-4 font-sans text-xs tracking-[0.12px] text-ink shrink-0">
+          {/* Right: Prev / Counter / Next Controls (44x44px hit targets) */}
+          <div className="flex items-center gap-1 sm:gap-2 font-sans text-xs tracking-[0.12px] text-ink shrink-0 -mr-2.5">
             <button
               type="button"
               onClick={goPrev}
               aria-label="Previous image"
-              className="px-1.5 sm:px-2 py-1 text-ink-muted hover:text-ink transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-ink-muted hover:text-ink active:opacity-70 transition-colors cursor-pointer"
             >
               ←
             </button>
@@ -411,7 +432,7 @@ export default function ProjectGalleryView({ identity, project }) {
               type="button"
               onClick={goNext}
               aria-label="Next image"
-              className="px-1.5 sm:px-2 py-1 text-ink-muted hover:text-ink transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-ink-muted hover:text-ink active:opacity-70 transition-colors cursor-pointer"
             >
               →
             </button>
@@ -441,7 +462,9 @@ export default function ProjectGalleryView({ identity, project }) {
                 key={`grid-${item.src}-${idx}`}
                 type="button"
                 onClick={() => handleSelectFromGrid(idx)}
-                className="group w-full text-left flex flex-col items-center cursor-pointer focus:outline-none"
+                aria-label={`View work ${idx + 1} of ${total}`}
+                aria-current={isSelected ? 'true' : undefined}
+                className="group w-full text-left flex flex-col items-center cursor-pointer active:opacity-80 transition-opacity"
               >
                 <div className="relative w-full flex items-center justify-center overflow-hidden">
                   {item.type === 'video' ? (
@@ -486,23 +509,26 @@ export default function ProjectGalleryView({ identity, project }) {
       </section>
 
       {/* Minimal Legal Footer */}
-      <footer className="w-full px-6 sm:px-8 lg:px-10 py-6 border-t border-ink/10">
+      <footer className="w-full px-6 sm:px-8 lg:px-10 py-5 border-t border-ink/10">
         <div className="flex items-center justify-between gap-6 font-sans font-normal text-xs tracking-[0.12px] text-ink-muted">
-          <a href="/" className="hover:text-ink transition-colors">
+          <a
+            href="/"
+            className="inline-flex items-center min-h-[40px] hover:text-ink active:opacity-70 transition-colors"
+          >
             ← Overview
           </a>
           <div className="flex items-center gap-6">
             <button
               type="button"
               onClick={() => setActiveLegal('imprint')}
-              className="hover:text-ink transition-colors cursor-pointer"
+              className="inline-flex items-center min-h-[40px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
             >
               Imprint
             </button>
             <button
               type="button"
               onClick={() => setActiveLegal('privacy')}
-              className="hover:text-ink transition-colors cursor-pointer"
+              className="inline-flex items-center min-h-[40px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
             >
               Privacy Policy
             </button>
@@ -513,17 +539,18 @@ export default function ProjectGalleryView({ identity, project }) {
       {/* Mobile Fullscreen Menu */}
       <AnimatePresence>
         {mobileDrawerOpen && (
-          <motion.div
+          <motion.nav
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.22 }}
-            className="fixed inset-0 top-16 z-40 bg-white px-6 py-10 lg:hidden flex flex-col gap-7 font-display font-normal uppercase text-3xl tracking-[0em] text-ink"
+            aria-label="Mobile navigation"
+            className="fixed inset-0 top-16 z-40 bg-white px-6 py-10 lg:hidden flex flex-col gap-5 font-display font-normal uppercase text-3xl tracking-[0em] text-ink"
           >
             <a
               href="/"
               onClick={() => setMobileDrawerOpen(false)}
-              className="text-left hover:text-ink-muted transition-colors cursor-pointer"
+              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
             >
               Overview
             </a>
@@ -533,7 +560,7 @@ export default function ProjectGalleryView({ identity, project }) {
                 setActiveOverlay('about');
                 setMobileDrawerOpen(false);
               }}
-              className="text-left hover:text-ink-muted transition-colors cursor-pointer"
+              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
             >
               About
             </button>
@@ -543,18 +570,18 @@ export default function ProjectGalleryView({ identity, project }) {
                 setActiveOverlay('exhibition');
                 setMobileDrawerOpen(false);
               }}
-              className="text-left hover:text-ink-muted transition-colors cursor-pointer"
+              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
             >
               Exhibition
             </button>
             <a
               href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
               onClick={() => setMobileDrawerOpen(false)}
-              className="text-left hover:text-ink-muted transition-colors cursor-pointer"
+              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
             >
               Anfrage
             </a>
-          </motion.div>
+          </motion.nav>
         )}
       </AnimatePresence>
 

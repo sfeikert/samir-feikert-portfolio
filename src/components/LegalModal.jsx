@@ -1,8 +1,29 @@
+import { useEffect } from 'react';
+
 export default function LegalModal({ activeLegal, onClose, identity }) {
+  useEffect(() => {
+    if (!activeLegal) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeLegal, onClose]);
+
   if (!activeLegal) return null;
+
+  const dialogTitleId = `legal-dialog-title-${activeLegal}`;
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={dialogTitleId}
       onClick={onClose}
       className="fixed inset-0 z-[80] bg-white/95 backdrop-blur-[2px] p-4 sm:p-8 flex items-center justify-center animate-fade-in"
     >
@@ -11,13 +32,17 @@ export default function LegalModal({ activeLegal, onClose, identity }) {
         className="max-w-xl w-full max-h-[85vh] overflow-y-auto bg-white border border-ink/15 p-6 sm:p-8 space-y-6 text-ink shadow-sm"
       >
         <div className="flex items-center justify-between border-b border-ink/10 pb-4">
-          <h2 className="font-display font-medium uppercase text-sm sm:text-base tracking-[0.02em]">
+          <h2
+            id={dialogTitleId}
+            className="font-display font-medium uppercase text-sm sm:text-base tracking-[0.02em]"
+          >
             {activeLegal === 'imprint' ? 'Impressum (§ 5 DDG)' : 'Datenschutzerklärung (DSGVO)'}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="font-sans font-normal text-xs text-ink-muted hover:text-ink px-2 py-1 tracking-[0.12px] uppercase cursor-pointer"
+            aria-label="Schließen"
+            className="inline-flex items-center justify-center min-h-[44px] px-3 -mr-3 font-sans font-normal text-xs text-ink-muted hover:text-ink active:opacity-70 tracking-[0.12px] uppercase transition-colors cursor-pointer"
           >
             Schließen ×
           </button>

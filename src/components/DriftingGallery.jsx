@@ -303,7 +303,8 @@ function DriftingRow({ row, rowIndex }) {
                   href={projectHref}
                   draggable={false}
                   onClick={handleSlideClick}
-                  className="sf-media-card block cursor-pointer"
+                  aria-label={slide.label ? `Open project ${slide.label}` : 'Open project'}
+                  className="sf-media-card block cursor-pointer active:opacity-90 transition-opacity"
                 >
                   <div
                     style={frameAspect ? { aspectRatio: frameAspect } : undefined}
@@ -401,19 +402,24 @@ export default function DriftingGallery({ identity, rows = [] }) {
         ))}
       </div>
 
-      {/* Bottom-Center Next-Row Scroll Control */}
+      {/* Bottom-Center Next-Row Scroll Control (44x44px hit target) */}
       <button
         type="button"
         onClick={handleNextSection}
         disabled={!canScrollNext}
         aria-label="Scroll to next gallery row"
-        className={`fixed bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))] sm:bottom-8 left-1/2 -translate-x-1/2 z-20 p-2 text-ink hover:text-ink-muted transition-all duration-200 ${
+        className={`fixed bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.5rem))] sm:bottom-6 left-1/2 -translate-x-1/2 z-20 inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-ink hover:text-ink-muted active:opacity-70 transition-all duration-200 ${
           canScrollNext
             ? 'opacity-100 translate-y-0 cursor-pointer'
             : 'opacity-0 translate-y-2 pointer-events-none'
         }`}
       >
-        <svg viewBox="0 0 13 8" className="w-4 h-2.5 fill-none stroke-current" strokeWidth="1.2">
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 13 8"
+          className="w-4 h-2.5 fill-none stroke-current"
+          strokeWidth="1.2"
+        >
           <path d="M0.5 0.5L6.5 6.5L12.5 0.5" />
         </svg>
       </button>

@@ -32,6 +32,9 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
   return (
     <>
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Exhibition & Archive"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -39,7 +42,7 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
         className="fixed inset-0 z-50 bg-white text-ink overflow-y-auto"
       >
         {/* Sticky Top Bar */}
-        <div className="sticky top-0 z-10 w-full px-6 sm:px-8 lg:px-10 pt-[max(1.25rem,env(safe-area-inset-top))] pb-5 bg-white/95 backdrop-blur-sm flex items-center justify-between border-b border-ink/10">
+        <div className="sticky top-0 z-10 w-full px-6 sm:px-8 lg:px-10 pt-[max(1rem,env(safe-area-inset-top))] pb-4 bg-white/95 backdrop-blur-sm flex items-center justify-between border-b border-ink/10">
           <div className="flex items-center gap-4">
             <span className="font-display font-medium uppercase text-sm sm:text-base tracking-[0.02em]">
               Exhibition & Archive
@@ -49,7 +52,7 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
             type="button"
             onClick={onClose}
             aria-label="Schließen"
-            className="font-sans font-normal text-xs uppercase tracking-[0.12px] text-ink-muted hover:text-ink transition-colors cursor-pointer py-1 px-2 -mr-2"
+            className="inline-flex items-center justify-center min-h-[44px] px-3 -mr-3 font-sans font-normal text-xs uppercase tracking-[0.12px] text-ink-muted hover:text-ink active:opacity-70 transition-colors cursor-pointer"
           >
             Schließen ×
           </button>
@@ -79,9 +82,10 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
                 className={`${item.colSpan || 'col-span-12 sm:col-span-6'} ${item.offsetClass || ''}`}
               >
                 {/* Media Card */}
-                <div
+                <button
+                  type="button"
                   onClick={() => setSelectedItem(item)}
-                  className="group cursor-pointer block"
+                  className="group cursor-pointer block w-full text-left active:opacity-85 transition-opacity"
                 >
                   <div
                     style={{ aspectRatio: item.aspect || '3 / 4' }}
@@ -113,24 +117,24 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
                       <span className="block text-[10px] text-ink-muted/70">{item.year}</span>
                     </div>
                   </div>
-                </div>
+                </button>
               </div>
             ))}
           </div>
 
           {/* Subtle Legal Links */}
-          <div className="mt-24 pt-8 border-t border-ink/10 flex items-center justify-end gap-6 font-sans text-xs text-ink-muted/70 tracking-[0.12px]">
+          <div className="mt-24 pt-6 border-t border-ink/10 flex items-center justify-end gap-6 font-sans text-xs text-ink-muted/70 tracking-[0.12px]">
             <button
               type="button"
               onClick={() => setActiveLegal('imprint')}
-              className="hover:text-ink transition-colors cursor-pointer"
+              className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
             >
               Imprint
             </button>
             <button
               type="button"
               onClick={() => setActiveLegal('privacy')}
-              className="hover:text-ink transition-colors cursor-pointer"
+              className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
             >
               Privacy Policy
             </button>
@@ -148,6 +152,9 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
       <AnimatePresence>
         {selectedItem && (
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={selectedItem.title}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -171,7 +178,7 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
                 <button
                   type="button"
                   onClick={() => setSelectedItem(null)}
-                  className="text-ink-muted hover:text-ink uppercase tracking-wider text-[11px] cursor-pointer ml-6"
+                  className="inline-flex items-center min-h-[44px] px-2 -mr-2 text-ink-muted hover:text-ink active:opacity-70 uppercase tracking-wider text-[11px] cursor-pointer ml-6"
                 >
                   Schließen ×
                 </button>

@@ -23,6 +23,9 @@ export default function AboutOverlay({ isOpen, onClose, identity, content }) {
 
   return (
     <motion.div
+      role="dialog"
+      aria-modal="true"
+      aria-label="About Samir Feikert"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -30,7 +33,7 @@ export default function AboutOverlay({ isOpen, onClose, identity, content }) {
       className="fixed inset-0 z-50 bg-white text-ink overflow-y-auto"
     >
       {/* Top Header */}
-      <div className="sticky top-0 z-10 w-full px-6 sm:px-8 lg:px-10 pt-[max(1.25rem,env(safe-area-inset-top))] pb-5 bg-white/95 backdrop-blur-sm flex items-center justify-between border-b border-ink/10">
+      <div className="sticky top-0 z-10 w-full px-6 sm:px-8 lg:px-10 pt-[max(1rem,env(safe-area-inset-top))] pb-4 bg-white/95 backdrop-blur-sm flex items-center justify-between border-b border-ink/10">
         <div className="flex items-center gap-4">
           <span className="font-display font-medium uppercase text-sm sm:text-base tracking-[0.02em]">
             About
@@ -43,7 +46,7 @@ export default function AboutOverlay({ isOpen, onClose, identity, content }) {
           type="button"
           onClick={onClose}
           aria-label="Schließen"
-          className="font-sans font-normal text-xs uppercase tracking-[0.12px] text-ink-muted hover:text-ink transition-colors cursor-pointer py-1 px-2 -mr-2"
+          className="inline-flex items-center justify-center min-h-[44px] px-3 -mr-3 font-sans font-normal text-xs uppercase tracking-[0.12px] text-ink-muted hover:text-ink active:opacity-70 transition-colors cursor-pointer"
         >
           Schließen ×
         </button>
@@ -91,18 +94,18 @@ export default function AboutOverlay({ isOpen, onClose, identity, content }) {
         </div>
 
         {/* Subtle Legal Links */}
-        <div className="pt-16 pb-4 border-t border-ink/10 flex items-center justify-end gap-6 font-sans text-xs text-ink-muted/70 tracking-[0.12px]">
+        <div className="pt-14 pb-4 border-t border-ink/10 flex items-center justify-end gap-6 font-sans text-xs text-ink-muted/70 tracking-[0.12px]">
           <button
             type="button"
             onClick={() => setActiveLegal('imprint')}
-            className="hover:text-ink transition-colors cursor-pointer"
+            className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
           >
             Imprint
           </button>
           <button
             type="button"
             onClick={() => setActiveLegal('privacy')}
-            className="hover:text-ink transition-colors cursor-pointer"
+            className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
           >
             Privacy Policy
           </button>
