@@ -14,7 +14,9 @@ export function getStaticPaths() {
   }));
 }
 
-const { project } = Astro.props;
+const { slug } = Astro.params;
+const project =
+  loadMedienProjects()?.projects?.find((p) => p.slug === slug) || Astro.props.project;
 const pageTitle = project?.label
   ? `${project.label} — ${siteIdentity.name}`
   : `${siteIdentity.name} — Photographer`;
