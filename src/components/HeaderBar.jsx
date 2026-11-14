@@ -4,13 +4,14 @@ import AboutOverlay from './AboutOverlay.jsx';
 import ExhibitionOverlay from './ExhibitionOverlay.jsx';
 import { aboutContent, exhibitionItems } from '../data/projects.js';
 
-export default function HeaderBar({ identity }) {
+export default function HeaderBar({ identity, showBackLink = false }) {
   const [menuOpen, setMenuOpen] = useState(true);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showScrollMark, setShowScrollMark] = useState(false);
   const [activeOverlay, setActiveOverlay] = useState(null);
 
   useEffect(() => {
+    if (showBackLink) return;
     const handleScroll = () => {
       setShowScrollMark(window.scrollY >= 280);
     };
@@ -21,7 +22,7 @@ export default function HeaderBar({ identity }) {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [showBackLink]);
 
   useEffect(() => {
     if (!mobileDrawerOpen) return;
@@ -46,44 +47,52 @@ export default function HeaderBar({ identity }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const anfrageHref = `mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`;
+
   return (
     <>
-      <header className="relative z-30 w-full px-6 sm:px-8 lg:px-10 py-4 sm:py-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-5 sm:gap-6">
-            {/* Desktop Toggle (44x44px hit target with negative left margin to preserve visual alignment) */}
-            <button
-              type="button"
-              onClick={() => setMenuOpen((prev) => !prev)}
-              aria-expanded={menuOpen}
-              aria-label={menuOpen ? 'Collapse navigation' : 'Expand navigation'}
-              className="hidden lg:inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-3 text-ink hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-            >
-              {menuOpen ? (
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 16 16"
-                  className="w-3.5 h-3.5 fill-none stroke-current"
-                  strokeWidth="1.5"
-                >
-                  <path d="M2 2L14 14M14 2L2 14" />
-                </svg>
-              ) : (
-                <svg aria-hidden="true" viewBox="0 0 20 14" className="w-4 h-3 fill-current">
-                  <rect y="0" width="20" height="1.5" />
-                  <rect y="6" width="20" height="1.5" />
-                  <rect y="12" width="20" height="1.5" />
-                </svg>
-              )}
-            </button>
+      <header
+        className={`relative z-30 w-full px-6 sm:px-8 lg:px-10 ${
+          showBackLink
+            ? 'pt-[max(1rem,env(safe-area-inset-top))] pb-3 shrink-0'
+            : 'py-4 sm:py-5'
+        } flex items-center justify-between`}
+      >
+        <div className="flex items-center gap-5 sm:gap-6">
+          {/* Desktop Toggle (44x44px hit target with negative left margin to preserve visual alignment) */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? 'Collapse navigation' : 'Expand navigation'}
+            className="hidden lg:inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-3 text-ink hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
+          >
+            {menuOpen ? (
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                className="w-3.5 h-3.5 fill-none stroke-current"
+                strokeWidth="1.5"
+              >
+                <path d="M2 2L14 14M14 2L2 14" />
+              </svg>
+            ) : (
+              <svg aria-hidden="true" viewBox="0 0 20 14" className="w-4 h-3 fill-current">
+                <rect y="0" width="20" height="1.5" />
+                <rect y="6" width="20" height="1.5" />
+                <rect y="12" width="20" height="1.5" />
+              </svg>
+            )}
+          </button>
 
-            {/* Mobile Toggle (44x44px hit target) */}
+          {/* Mobile Toggle (+ Direct Back Link on project detail pages) */}
+          <div className="flex lg:hidden items-center gap-3">
             <button
               type="button"
               onClick={() => setMobileDrawerOpen((prev) => !prev)}
               aria-expanded={mobileDrawerOpen}
               aria-label={mobileDrawerOpen ? 'Close menu' : 'Open menu'}
-              className="lg:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-3 text-ink active:opacity-70 transition-opacity cursor-pointer"
+              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-3 text-ink active:opacity-70 transition-opacity cursor-pointer"
             >
               {mobileDrawerOpen ? (
                 <svg
@@ -103,36 +112,75 @@ export default function HeaderBar({ identity }) {
               )}
             </button>
 
-            {/* Desktop Horizontal Links */}
-            <AnimatePresence initial={false}>
-              {menuOpen && (
-                <motion.nav
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -8 }}
-                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                  aria-label="Primary navigation"
-                  className="hidden lg:flex items-center gap-7 font-sans font-normal text-[1rem] tracking-[0.12px] text-ink"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setActiveOverlay('about')}
-                    className="py-2 px-1 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-                  >
-                    About
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveOverlay('exhibition')}
-                    className="py-2 px-1 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-                  >
-                    Exhibition
-                  </button>
-                </motion.nav>
-              )}
-            </AnimatePresence>
+            {showBackLink && (
+              <a
+                href="/"
+                className="inline-flex items-center min-h-[44px] px-1 font-sans font-normal text-xs uppercase tracking-[0.12px] text-ink-muted hover:text-ink active:opacity-70 transition-colors"
+              >
+                ← Overview
+              </a>
+            )}
           </div>
+
+          {/* Desktop Horizontal Links */}
+          <AnimatePresence initial={false}>
+            {menuOpen && (
+              <motion.nav
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                aria-label="Primary navigation"
+                className="hidden lg:flex items-center gap-7 font-sans font-normal text-[1rem] tracking-[0.12px] text-ink"
+              >
+                {showBackLink && (
+                  <a
+                    href="/"
+                    className="py-2 px-1 text-ink-muted hover:text-ink active:opacity-70 transition-colors cursor-pointer"
+                  >
+                    ← Overview
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setActiveOverlay('about')}
+                  className="py-2 px-1 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
+                >
+                  About
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveOverlay('exhibition')}
+                  className="py-2 px-1 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
+                >
+                  Exhibition
+                </button>
+              </motion.nav>
+            )}
+          </AnimatePresence>
         </div>
+
+        {/* In-flow Top-Right Controls on Project Detail Pages */}
+        {showBackLink && (
+          <div className="flex items-center gap-2 sm:gap-3">
+            <a
+              href="/"
+              aria-label="Back to start page"
+              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-right leading-none group active:opacity-70 cursor-pointer"
+            >
+              <span className="block font-display font-medium uppercase tracking-[0.04em] text-sm sm:text-base text-ink group-hover:text-ink-muted transition-colors">
+                SF
+              </span>
+            </a>
+
+            <a
+              href={anfrageHref}
+              className="inline-flex items-center justify-center min-h-[38px] font-sans font-normal text-xs tracking-[0.14px] text-ink bg-white/85 hover:bg-white active:opacity-80 border border-ink/20 hover:border-ink/50 backdrop-blur-sm rounded-full px-4 py-1.5 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+            >
+              Anfrage
+            </a>
+          </div>
+        )}
       </header>
 
       {/* Mobile Fullscreen Menu */}
@@ -146,6 +194,15 @@ export default function HeaderBar({ identity }) {
             aria-label="Mobile navigation"
             className="fixed inset-0 top-16 z-40 bg-white px-6 py-10 lg:hidden flex flex-col gap-5 font-display font-normal uppercase text-3xl tracking-[0em] text-ink"
           >
+            {showBackLink && (
+              <a
+                href="/"
+                onClick={() => setMobileDrawerOpen(false)}
+                className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
+              >
+                Overview
+              </a>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -167,7 +224,7 @@ export default function HeaderBar({ identity }) {
               Exhibition
             </button>
             <a
-              href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
+              href={anfrageHref}
               onClick={() => setMobileDrawerOpen(false)}
               className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
             >
@@ -200,34 +257,34 @@ export default function HeaderBar({ identity }) {
         )}
       </AnimatePresence>
 
-      {/* Top-Right Sticky Controls: "SF" Monogram + Apple Pill "Anfrage" */}
-      <div className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1.25rem,env(safe-area-inset-right))] sm:top-5 sm:right-8 lg:right-10 z-30 flex items-center gap-2 sm:gap-3">
-        {/* Floating "SF" (fades in past 280px) */}
-        <div
-          className={`transition-opacity duration-300 ${
-            showScrollMark ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-          }`}
-        >
-          <button
-            type="button"
-            onClick={handleScrollToTop}
-            className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-right leading-none group active:opacity-70 cursor-pointer"
-            aria-label="Scroll to top"
+      {/* Sticky Top-Right Controls on Start Page: "SF" Monogram + Apple Pill "Anfrage" */}
+      {!showBackLink && (
+        <div className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1.25rem,env(safe-area-inset-right))] sm:top-5 sm:right-8 lg:right-10 z-30 flex items-center gap-2 sm:gap-3">
+          <div
+            className={`transition-opacity duration-300 ${
+              showScrollMark ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
           >
-            <span className="block font-display font-medium uppercase tracking-[0.04em] text-sm sm:text-base text-ink group-hover:text-ink-muted transition-colors">
-              SF
-            </span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={handleScrollToTop}
+              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-right leading-none group active:opacity-70 cursor-pointer"
+              aria-label="Scroll to top"
+            >
+              <span className="block font-display font-medium uppercase tracking-[0.04em] text-sm sm:text-base text-ink group-hover:text-ink-muted transition-colors">
+                SF
+              </span>
+            </button>
+          </div>
 
-        {/* Apple-style Pill Button "Anfrage" */}
-        <a
-          href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
-          className="inline-flex items-center justify-center min-h-[38px] font-sans font-normal text-xs tracking-[0.14px] text-ink bg-white/85 hover:bg-white active:opacity-80 border border-ink/20 hover:border-ink/50 backdrop-blur-sm rounded-full px-4 py-1.5 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-        >
-          Anfrage
-        </a>
-      </div>
+          <a
+            href={anfrageHref}
+            className="inline-flex items-center justify-center min-h-[38px] font-sans font-normal text-xs tracking-[0.14px] text-ink bg-white/85 hover:bg-white active:opacity-80 border border-ink/20 hover:border-ink/50 backdrop-blur-sm rounded-full px-4 py-1.5 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+          >
+            Anfrage
+          </a>
+        </div>
+      )}
     </>
   );
 }

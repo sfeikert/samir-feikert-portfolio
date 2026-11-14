@@ -4,6 +4,9 @@ export default function LegalModal({ activeLegal, onClose, identity }) {
   useEffect(() => {
     if (!activeLegal) return;
 
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
@@ -12,7 +15,10 @@ export default function LegalModal({ activeLegal, onClose, identity }) {
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [activeLegal, onClose]);
 
   if (!activeLegal) return null;

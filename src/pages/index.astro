@@ -11,11 +11,9 @@ const activeRows = medienData?.rows?.length ? medienData.rows : galleryRows;
 ---
 
 <BaseLayout title="Samir Feikert — Photographer">
-  <div class="sf-snap-container">
-    <HeaderBar client:load identity={siteIdentity} />
-    <main id="main-content">
-      <DriftingGallery client:load identity={siteIdentity} rows={activeRows} />
-    </main>
-    <MinimalFooter client:visible identity={siteIdentity} />
-  </div>
+  <HeaderBar client:load identity={siteIdentity} />
+  <main id="main-content">
+    <DriftingGallery client:load identity={siteIdentity} rows={activeRows} />
+  </main>
+  <MinimalFooter client:visible identity={siteIdentity} />
 </BaseLayout>

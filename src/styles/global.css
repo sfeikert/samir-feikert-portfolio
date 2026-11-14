@@ -195,12 +195,6 @@
   }
 }
 
-.sf-slide.sf-align-top,
-.sf-slide.sf-align-middle,
-.sf-slide.sf-align-bottom {
-  align-items: center;
-}
-
 /* Media card & hover caption */
 .sf-media-card {
   position: relative;

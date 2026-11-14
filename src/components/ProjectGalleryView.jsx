@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import AboutOverlay from './AboutOverlay.jsx';
-import ExhibitionOverlay from './ExhibitionOverlay.jsx';
-import LegalModal from './LegalModal.jsx';
-import { aboutContent, exhibitionItems } from '../data/projects.js';
+import HeaderBar from './HeaderBar.jsx';
+import MinimalFooter from './MinimalFooter.jsx';
 
 function formatCounter(num) {
   return String(num).padStart(2, '0');
@@ -22,10 +19,6 @@ export default function ProjectGalleryView({ identity, project }) {
 
   const total = images.length;
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(true);
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [activeOverlay, setActiveOverlay] = useState(null);
-  const [activeLegal, setActiveLegal] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -55,25 +48,10 @@ export default function ProjectGalleryView({ identity, project }) {
     setCurrentIndex((prev) => (prev - 1 + total) % total);
   }, [total]);
 
-  useEffect(() => {
-    if (!mobileDrawerOpen) return;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [mobileDrawerOpen]);
-
-  // Keyboard navigation (ArrowRight -> next, ArrowLeft -> prev, Escape -> close drawer or back to start page)
+  // Keyboard navigation (ArrowRight -> next, ArrowLeft -> prev, Escape -> back to start page)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (activeOverlay || activeLegal) return;
-
-      if (mobileDrawerOpen) {
-        if (e.key === 'Escape') {
-          setMobileDrawerOpen(false);
-        }
-        return;
-      }
+      if (document.body.style.overflow === 'hidden') return;
 
       if (e.key === 'ArrowRight') {
         e.preventDefault();
@@ -88,7 +66,7 @@ export default function ProjectGalleryView({ identity, project }) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goNext, goPrev, activeOverlay, activeLegal, mobileDrawerOpen]);
+  }, [goNext, goPrev]);
 
   // Preload & pre-decode adjacent images in memory for zero-flicker click-through
   useEffect(() => {
@@ -192,126 +170,7 @@ export default function ProjectGalleryView({ identity, project }) {
           1. TOP FULL-VIEWPORT SLIDESHOW STAGE (Click Through 1 by 1)
          ===================================================================== */}
       <section className="relative h-dvh min-h-[540px] w-full flex flex-col justify-between overflow-hidden">
-        {/* Top Header Bar */}
-        <header className="relative z-30 w-full px-6 sm:px-8 lg:px-10 pt-[max(1rem,env(safe-area-inset-top))] pb-3 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-5 sm:gap-6">
-            {/* Desktop Toggle (44x44px hit target) */}
-            <button
-              type="button"
-              onClick={() => setMenuOpen((prev) => !prev)}
-              aria-expanded={menuOpen}
-              aria-label={menuOpen ? 'Collapse navigation' : 'Expand navigation'}
-              className="hidden lg:inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-3 text-ink hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-            >
-              {menuOpen ? (
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 16 16"
-                  className="w-3.5 h-3.5 fill-none stroke-current"
-                  strokeWidth="1.5"
-                >
-                  <path d="M2 2L14 14M14 2L2 14" />
-                </svg>
-              ) : (
-                <svg aria-hidden="true" viewBox="0 0 20 14" className="w-4 h-3 fill-current">
-                  <rect y="0" width="20" height="1.5" />
-                  <rect y="6" width="20" height="1.5" />
-                  <rect y="12" width="20" height="1.5" />
-                </svg>
-              )}
-            </button>
-
-            {/* Mobile Toggle + Direct Back Link (44x44px hit targets) */}
-            <div className="flex lg:hidden items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setMobileDrawerOpen((prev) => !prev)}
-                aria-expanded={mobileDrawerOpen}
-                aria-label={mobileDrawerOpen ? 'Close menu' : 'Open menu'}
-                className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-3 text-ink active:opacity-70 transition-opacity cursor-pointer"
-              >
-                {mobileDrawerOpen ? (
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 16 16"
-                    className="w-3.5 h-3.5 fill-none stroke-current"
-                    strokeWidth="1.5"
-                  >
-                    <path d="M2 2L14 14M14 2L2 14" />
-                  </svg>
-                ) : (
-                  <svg aria-hidden="true" viewBox="0 0 20 14" className="w-4 h-3 fill-current">
-                    <rect y="0" width="20" height="1.5" />
-                    <rect y="6" width="20" height="1.5" />
-                    <rect y="12" width="20" height="1.5" />
-                  </svg>
-                )}
-              </button>
-
-              <a
-                href="/"
-                className="inline-flex items-center min-h-[44px] px-1 font-sans font-normal text-xs uppercase tracking-[0.12px] text-ink-muted hover:text-ink active:opacity-70 transition-colors"
-              >
-                ← Overview
-              </a>
-            </div>
-
-            {/* Desktop Horizontal Links */}
-            <AnimatePresence initial={false}>
-              {menuOpen && (
-                <motion.nav
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -8 }}
-                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                  aria-label="Primary navigation"
-                  className="hidden lg:flex items-center gap-7 font-sans font-normal text-[1rem] tracking-[0.12px] text-ink"
-                >
-                  <a
-                    href="/"
-                    className="py-2 px-1 text-ink-muted hover:text-ink active:opacity-70 transition-colors cursor-pointer"
-                  >
-                    ← Overview
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => setActiveOverlay('about')}
-                    className="py-2 px-1 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-                  >
-                    About
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveOverlay('exhibition')}
-                    className="py-2 px-1 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-                  >
-                    Exhibition
-                  </button>
-                </motion.nav>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Top-Right Controls: "SF" Monogram (links to /) + Apple Pill "Anfrage" */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <a
-              href="/"
-              aria-label="Back to start page"
-              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-right leading-none group active:opacity-70 cursor-pointer"
-            >
-              <span className="block font-display font-medium uppercase tracking-[0.04em] text-sm sm:text-base text-ink group-hover:text-ink-muted transition-colors">
-                SF
-              </span>
-            </a>
-
-            <a
-              href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
-              className="inline-flex items-center justify-center min-h-[38px] font-sans font-normal text-xs tracking-[0.14px] text-ink bg-white/85 hover:bg-white active:opacity-80 border border-ink/20 hover:border-ink/50 backdrop-blur-sm rounded-full px-4 py-1.5 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-            >
-              Anfrage
-            </a>
-          </div>
-        </header>
+        <HeaderBar identity={identity} showBackLink />
 
         {/* Main Interactive Single-Image Stage (Click or Swipe to Step Through — Zero White Flash) */}
         <main
@@ -536,111 +395,7 @@ export default function ProjectGalleryView({ identity, project }) {
         </div>
       </section>
 
-      {/* Minimal Legal Footer */}
-      <footer className="w-full px-6 sm:px-8 lg:px-10 py-5 border-t border-ink/10">
-        <div className="flex items-center justify-between gap-6 font-sans font-normal text-xs tracking-[0.12px] text-ink-muted">
-          <a
-            href="/"
-            className="inline-flex items-center min-h-[40px] hover:text-ink active:opacity-70 transition-colors"
-          >
-            ← Overview
-          </a>
-          <div className="flex items-center gap-6">
-            <button
-              type="button"
-              onClick={() => setActiveLegal('imprint')}
-              className="inline-flex items-center min-h-[40px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
-            >
-              Imprint
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveLegal('privacy')}
-              className="inline-flex items-center min-h-[40px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
-            >
-              Privacy Policy
-            </button>
-          </div>
-        </div>
-      </footer>
-
-      {/* Mobile Fullscreen Menu */}
-      <AnimatePresence>
-        {mobileDrawerOpen && (
-          <motion.nav
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.22 }}
-            aria-label="Mobile navigation"
-            className="fixed inset-0 top-16 z-40 bg-white px-6 py-10 lg:hidden flex flex-col gap-5 font-display font-normal uppercase text-3xl tracking-[0em] text-ink"
-          >
-            <a
-              href="/"
-              onClick={() => setMobileDrawerOpen(false)}
-              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-            >
-              Overview
-            </a>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveOverlay('about');
-                setMobileDrawerOpen(false);
-              }}
-              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-            >
-              About
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveOverlay('exhibition');
-                setMobileDrawerOpen(false);
-              }}
-              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-            >
-              Exhibition
-            </button>
-            <a
-              href={`mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`}
-              onClick={() => setMobileDrawerOpen(false)}
-              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-            >
-              Anfrage
-            </a>
-          </motion.nav>
-        )}
-      </AnimatePresence>
-
-      {/* Overlays & Modals */}
-      <AnimatePresence>
-        {activeOverlay === 'about' && (
-          <AboutOverlay
-            isOpen={true}
-            onClose={() => setActiveOverlay(null)}
-            identity={identity}
-            content={aboutContent}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeOverlay === 'exhibition' && (
-          <ExhibitionOverlay
-            isOpen={true}
-            onClose={() => setActiveOverlay(null)}
-            identity={identity}
-            items={exhibitionItems}
-          />
-        )}
-      </AnimatePresence>
-
-      <LegalModal
-        activeLegal={activeLegal}
-        onClose={() => setActiveLegal(null)}
-        identity={identity}
-      />
+      <MinimalFooter identity={identity} showBackLink />
     </div>
   );
 }

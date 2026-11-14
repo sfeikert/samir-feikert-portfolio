@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { galleryRows, getAllProjects } from '../data/projects.js';
+import { galleryRows, getAllProjects, toProjectSlug } from '../data/projects.js';
 
 const MEDIA_EXTENSIONS = new Set([
   '.jpg',
@@ -36,15 +36,7 @@ const VIDEO_POSTERS = {
 };
 
 function toSlug(text, fallbackIndex = 0) {
-  const slug = String(text || '')
-    .toLowerCase()
-    .replace(/ä/g, 'ae')
-    .replace(/ö/g, 'oe')
-    .replace(/ü/g, 'ue')
-    .replace(/ß/g, 'ss')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return slug || `project-${fallbackIndex + 1}`;
+  return toProjectSlug({ label: text }, fallbackIndex);
 }
 
 function formatCategoryLabel(rawName) {

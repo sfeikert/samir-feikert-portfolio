@@ -362,7 +362,7 @@ function DriftingRow({ row, rowIndex }) {
   };
 
   return (
-    <section data-gallery-section className="sf-gallery-row sf-snap-row">
+    <section data-gallery-section className="sf-gallery-row">
       <div
         ref={viewportRef}
         onDragStart={(e) => e.preventDefault()}
@@ -370,13 +370,6 @@ function DriftingRow({ row, rowIndex }) {
       >
         <div ref={trackRef} className="sf-slider-track">
           {renderedSlides.map((slide, idx) => {
-            const alignClass =
-              slide.align === 'middle'
-                ? 'sf-align-middle'
-                : slide.align === 'bottom'
-                ? 'sf-align-bottom'
-                : 'sf-align-top';
-
             const isAutoAspect = !slide.aspect || slide.aspect === 'auto';
             const mediaClass = isAutoAspect
               ? 'sf-media-auto'
@@ -400,7 +393,7 @@ function DriftingRow({ row, rowIndex }) {
             return (
               <div
                 key={`${row.id}-${idx}`}
-                className={`sf-slide ${alignClass} ${slide.wide ? 'sf-wide' : ''}`}
+                className={`sf-slide ${slide.wide ? 'sf-wide' : ''}`}
               >
                 <a
                   href={projectHref}
