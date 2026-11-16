@@ -9,17 +9,17 @@
     "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview"
   },
   "dependencies": {
-    "@astrojs/react": "^7.1.2",
-    "@fontsource/albert-sans": "^5.3.0",
-    "@fontsource/inter": "^5.3.0",
-    "astro": "^7.4.5",
-    "framer-motion": "^11.15.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "tailwindcss": "^3.4.17"
+    "@astrojs/react": "7.1.9",
+    "@fontsource/albert-sans": "5.3.0",
+    "@fontsource/inter": "5.3.0",
+    "astro": "7.4.12",
+    "framer-motion": "11.18.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tailwindcss": "3.4.19"
   },
   "devDependencies": {
-    "autoprefixer": "^10.6.2",
-    "postcss": "^8.5.32"
+    "autoprefixer": "10.6.2",
+    "postcss": "8.5.32"
   }
 }

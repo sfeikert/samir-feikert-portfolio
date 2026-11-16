@@ -11,9 +11,11 @@ node_modules/
 .env.*
 !.env.example
 
-# macOS & Editor files
+# macOS, Python & Editor files
 .DS_Store
 **/.DS_Store
+__pycache__/
+*.py[cod]
 npm-debug.log*
 .vscode/
 .idea/
