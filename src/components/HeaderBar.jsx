@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import AboutOverlay from './AboutOverlay.jsx';
 import ExhibitionOverlay from './ExhibitionOverlay.jsx';
-import { aboutContent, exhibitionItems } from '../data/projects.js';
+import { aboutContent, exhibitionItems as defaultExhibitionItems } from '../data/projects.js';
 
-export default function HeaderBar({ identity, showBackLink = false }) {
+export default function HeaderBar({ identity, showBackLink = false, exhibitionItems }) {
   const [menuOpen, setMenuOpen] = useState(true);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showScrollMark, setShowScrollMark] = useState(false);
@@ -252,7 +252,7 @@ export default function HeaderBar({ identity, showBackLink = false }) {
             isOpen={true}
             onClose={() => setActiveOverlay(null)}
             identity={identity}
-            items={exhibitionItems}
+            items={exhibitionItems?.length ? exhibitionItems : defaultExhibitionItems}
           />
         )}
       </AnimatePresence>

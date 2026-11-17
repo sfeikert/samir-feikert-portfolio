@@ -20,14 +20,116 @@ const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v']);
 
 // Cloudflare Pages has a strict 25 MiB per-file limit
 const MAX_CLOUDFLARE_BYTES = 24.8 * 1024 * 1024;
+const MAX_SLIDES_PER_ROW = 4;
 
-// Preferred order for Row 1 folders
-const ROW_1_ORDER = [
+// Curated order, clean labels, and cover selections for Medien/startseite/
+const STARTSEITE_ORDER = [
   'samuel-brillenfotos-beyeler',
   'timon-editorial',
   'mercedes-avia',
+  'vitra-architektur',
+  'dbb-double-header',
+  'hannah',
+  'jamelia-shooting',
+  'shooting-hannes',
+  'passione-engadina-22',
+  'porsche-rooling-shots',
+  'samuel-ausfahrt-stetten',
+  'hannes-vitra-nacht',
 ];
-const ROW_1_FOLDERS = new Set(ROW_1_ORDER);
+
+const STARTSEITE_META = {
+  'samuel-brillenfotos-beyeler': {
+    label: 'Samuel — Beyeler',
+    cover: 'samuel-Brille-Beyeler00001.jpg',
+  },
+  'timon-editorial': {
+    label: 'Timon — Editorial',
+    cover: 'startseite1.MP4',
+  },
+  'mercedes-avia': {
+    label: 'Mercedes — Avia',
+    cover: 'Unbenannt-1.jpg',
+  },
+  'vitra-architektur': {
+    label: 'Vitra — Architecture',
+    cover: '_DSF3025.jpg',
+  },
+  'dbb-double-header': {
+    label: 'DBB — Double Header',
+    cover: 'Dbb Post 1.jpg',
+  },
+  hannah: {
+    label: 'Hannah',
+    cover: 'Banner.jpg',
+  },
+  'jamelia-shooting': {
+    label: 'Jamelia',
+    cover: '_DSF5287.jpg',
+  },
+  'shooting-hannes': {
+    label: 'Hannes — Night',
+    cover: '_MG_0348.jpg',
+  },
+  'passione-engadina-22': {
+    label: 'Passione Engadina',
+    cover: '_DSF7117-3.jpg',
+  },
+  'porsche-rooling-shots': {
+    label: 'Porsche — Rolling',
+    cover: '3V8A5576.jpg',
+  },
+  'samuel-ausfahrt-stetten': {
+    label: 'Samuel — Stetten',
+    cover: '_DSF7458.jpg',
+  },
+  'hannes-vitra-nacht': {
+    label: 'Hannes — Vitra',
+    cover: '_DSF2218.jpg',
+  },
+};
+
+// Curated order, clean labels, covers, and asymmetrical collage grid for Medien/Exhibition/
+const EXHIBITION_ORDER = [
+  'island',
+  'soerenberg',
+  'avia-tankstelle',
+  'landrover-roadtrip-frankreich',
+];
+
+const EXHIBITION_META = {
+  island: {
+    label: 'Iceland',
+    cover: '_MG_0152.jpg',
+    colSpan: 'col-span-12 sm:col-span-7 lg:col-span-5',
+    offsetClass: 'lg:mt-4',
+  },
+  soerenberg: {
+    label: 'Sörenberg',
+    cover: '_DSF2170.jpg',
+    colSpan: 'col-span-12 sm:col-span-5 lg:col-span-7',
+    offsetClass: 'lg:mt-20',
+  },
+  'avia-tankstelle': {
+    label: 'Avia — Night',
+    cover: '_MG_1904.jpg',
+    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-5',
+    offsetClass: 'lg:-mt-6',
+  },
+  'landrover-roadtrip-frankreich': {
+    label: 'France — Roadtrip',
+    cover: '_DSF8081.jpg',
+    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-6 lg:col-start-7',
+    offsetClass: 'lg:mt-14',
+  },
+};
+
+const FALLBACK_EXHIBITION_LAYOUTS = [
+  { colSpan: 'col-span-12 sm:col-span-7 lg:col-span-5', offsetClass: 'lg:mt-4' },
+  { colSpan: 'col-span-12 sm:col-span-5 lg:col-span-7', offsetClass: 'lg:mt-20' },
+  { colSpan: 'col-span-12 sm:col-span-6 lg:col-span-5', offsetClass: 'lg:-mt-6' },
+  { colSpan: 'col-span-12 sm:col-span-6 lg:col-span-6 lg:col-start-7', offsetClass: 'lg:mt-14' },
+];
 
 // Pre-generated poster frames for instant display on iOS Safari (even in Low Power Mode)
 const VIDEO_POSTERS = {
@@ -40,20 +142,13 @@ function toSlug(text, fallbackIndex = 0) {
 }
 
 function formatCategoryLabel(rawName) {
-  const trimmed = rawName.trim().replace(/^[-_.\s]+|[-_.\s]+$/g, '');
+  const trimmed = rawName.normalize('NFC').trim().replace(/^[-_.\s]+|[-_.\s]+$/g, '');
   if (!trimmed) return 'Untitled Series';
 
-  // Replace hyphens and underscores with spaces if no spaces exist
-  const normalized = trimmed.includes(' ')
-    ? trimmed
-    : trimmed.replace(/[-_]+/g, ' ');
-
-  // Capitalize first letter of words if entirely lowercase
-  if (normalized === normalized.toLowerCase()) {
-    return normalized.replace(/\b\w/g, (char) => char.toUpperCase());
-  }
-
-  return normalized;
+  const normalized = trimmed.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
+  return normalized.replace(/\b([a-zäöü])([a-zäöüß]*)/g, (_, first, rest) =>
+    first.toUpperCase() + rest
+  );
 }
 
 /**
@@ -116,14 +211,13 @@ function getMediaDimensions(filePath, ext) {
 }
 
 /**
- * Extracts `{ categoryKey, label, seriesPrefix, priority, order }` from a filename.
+ * Extracts `{ seriesPrefix, priority, order }` from a filename for clean intra-folder sorting.
  */
-function parseFilename(baseName, folderName = null) {
+function parseFilenameOrder(baseName) {
   const clean = baseName.trim();
   const isExplicitCover = /^(startseite|cover|titel)/i.test(clean);
   const priority = isExplicitCover ? 0 : 1;
 
-  // Extract trailing number & prefix (e.g. "Dbb Post 1" -> prefix "dbb post", order 1)
   const trailingMatch = clean.match(/^(.+?)[-_.\s(]*(\d+)\)?$/);
   const leadingMatch = !trailingMatch ? clean.match(/^(\d+)[-_.\s]+(.+)$/) : null;
 
@@ -149,36 +243,13 @@ function parseFilename(baseName, folderName = null) {
     }
   }
 
-  if (folderName) {
-    const label = formatCategoryLabel(folderName);
-    return {
-      categoryKey: toSlug(folderName),
-      label,
-      seriesPrefix,
-      priority,
-      order,
-    };
-  }
-
-  const rawLabel = trailingMatch?.[1] || leadingMatch?.[2] || clean;
-  const label = formatCategoryLabel(rawLabel);
-  return {
-    categoryKey: toSlug(label),
-    label,
-    seriesPrefix,
-    priority,
-    order: order === 999 ? 1 : order,
-  };
+  return { seriesPrefix, priority, order };
 }
 
 /**
- * Sorts items inside a category cleanly:
- * 1. Explicit cover files (`startseite1.MP4`) come first.
- * 2. Sub-series are grouped by their filename prefix (`Dbb Post 1..12`, then video, then `Unbenannt-2..10`)
- *    so different series inside the same folder never get interleaved.
- * 3. Within each sub-series, items are sorted by number ascending (`1, 2, 3...`).
+ * Sorts items inside a series folder cleanly and promotes `preferredCoverFile` to index 0.
  */
-function sortCategoryItems(items) {
+function sortCategoryItems(items, preferredCoverFile = null) {
   const prefixMeta = new Map();
 
   for (const item of items) {
@@ -201,19 +272,17 @@ function sortCategoryItems(items) {
     }
   }
 
-  return [...items].sort((a, b) => {
+  const sorted = [...items].sort((a, b) => {
     if (a.priority !== b.priority) return a.priority - b.priority;
 
     if (a._groupKey !== b._groupKey) {
       const metaA = prefixMeta.get(a._groupKey);
       const metaB = prefixMeta.get(b._groupKey);
 
-      // Group that starts with #1 comes first (e.g. "Dbb Post 1")
       const aHasOne = metaA.minOrder === 1 ? 0 : 1;
       const bHasOne = metaB.minOrder === 1 ? 0 : 1;
       if (aHasOne !== bHasOne) return aHasOne - bHasOne;
 
-      // Place standalone videos right between the first and second photo sub-series
       if (metaA.isVideo !== metaB.isVideo) return metaA.isVideo ? -1 : 1;
 
       if (metaA.minOrder !== metaB.minOrder) return metaA.minOrder - metaB.minOrder;
@@ -223,12 +292,113 @@ function sortCategoryItems(items) {
     if (a.order !== b.order) return a.order - b.order;
     return a.fileName.localeCompare(b.fileName, 'de', { numeric: true });
   });
+
+  if (preferredCoverFile) {
+    const target = preferredCoverFile.normalize('NFC').toLowerCase();
+    const coverIdx = sorted.findIndex(
+      (item) => item.fileName.normalize('NFC').toLowerCase() === target
+    );
+    if (coverIdx > 0) {
+      const [coverItem] = sorted.splice(coverIdx, 1);
+      sorted.unshift(coverItem);
+    }
+  }
+
+  return sorted;
+}
+
+function collectFolderFiles(folderPath, folderName, section, relPrefix = '') {
+  const files = [];
+  for (const sub of fs.readdirSync(folderPath, { withFileTypes: true })) {
+    if (sub.name.startsWith('.') || !sub.isFile()) continue;
+    const ext = path.extname(sub.name).toLowerCase();
+    if (!MEDIA_EXTENSIONS.has(ext)) continue;
+
+    const absPath = path.join(folderPath, sub.name);
+    const stat = fs.statSync(absPath);
+    if (stat.size > MAX_CLOUDFLARE_BYTES) {
+      console.warn(
+        `[Medien] Skipping ${relPrefix}/${folderName}/${sub.name} (${(stat.size / 1024 / 1024).toFixed(1)} MiB exceeds Cloudflare Pages 25 MiB limit)`
+      );
+      continue;
+    }
+
+    files.push({
+      absPath,
+      relPath: relPrefix
+        ? path.join(relPrefix, folderName, sub.name)
+        : path.join(folderName, sub.name),
+      fileName: sub.name,
+      baseName: path.basename(sub.name, path.extname(sub.name)),
+      ext,
+      folderName: folderName.normalize('NFC'),
+      section,
+      stat,
+    });
+  }
+  return files;
+}
+
+function collectSeriesFromDir(baseDir, section, relPrefix = '') {
+  const files = [];
+  if (!fs.existsSync(baseDir)) return files;
+
+  for (const folder of fs.readdirSync(baseDir, { withFileTypes: true })) {
+    if (folder.name.startsWith('.') || !folder.isDirectory()) continue;
+    files.push(
+      ...collectFolderFiles(
+        path.join(baseDir, folder.name),
+        folder.name,
+        section,
+        relPrefix
+      )
+    );
+  }
+
+  return files;
+}
+
+function sortByPreferredOrder(projects, orderList) {
+  return [...projects].sort((a, b) => {
+    const idxA = orderList.indexOf(a.folderKey);
+    const idxB = orderList.indexOf(b.folderKey);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.label.localeCompare(b.label, 'de');
+  });
 }
 
 /**
- * Syncs files from `/Medien` to `/public/medien` and returns grouped projects & rows.
- * - Each folder in `/Medien` is represented by ONE single title photo/video on the start page.
- * - Remaining slots in Row 2 (and Rows 3 & 4) are filled with black placeholder boxes.
+ * Splits start-page projects into balanced horizontal rows (max 4–5 items per row)
+ * so the site scrolls smoothly across multiple curated rows.
+ */
+function chunkIntoRows(projects, maxPerRow = MAX_SLIDES_PER_ROW) {
+  const total = projects.length;
+  if (total === 0) return [];
+
+  const rowCount = total <= 5 ? 1 : Math.ceil(total / maxPerRow);
+  const baseSize = Math.floor(total / rowCount);
+  const remainder = total % rowCount;
+
+  const rows = [];
+  let cursor = 0;
+  for (let r = 0; r < rowCount; r++) {
+    const count = baseSize + (r < remainder ? 1 : 0);
+    const rowId = `row-${String(r + 1).padStart(2, '0')}`;
+    rows.push({
+      id: rowId,
+      slides: projects.slice(cursor, cursor + count).map((p) => ({ ...p, rowId })),
+    });
+    cursor += count;
+  }
+
+  return rows;
+}
+
+/**
+ * Syncs files from `/Medien/startseite` and `/Medien/Exhibition` to `/public/medien`
+ * and returns grouped projects, balanced start-page rows, and exhibition series.
  */
 export function loadMedienProjects() {
   const rootDir = process.cwd();
@@ -239,61 +409,22 @@ export function loadMedienProjects() {
     return null;
   }
 
-  const entries = fs.readdirSync(medienDir, { withFileTypes: true });
   const collectedFiles = [];
+  const topEntries = fs.readdirSync(medienDir, { withFileTypes: true });
 
-  for (const entry of entries) {
-    if (entry.name.startsWith('.')) continue;
+  for (const entry of topEntries) {
+    if (entry.name.startsWith('.') || !entry.isDirectory()) continue;
 
-    const fullPath = path.join(medienDir, entry.name);
+    const lower = entry.name.toLowerCase();
+    const entryPath = path.join(medienDir, entry.name);
 
-    if (entry.isDirectory()) {
-      const subEntries = fs.readdirSync(fullPath, { withFileTypes: true });
-      for (const sub of subEntries) {
-        if (sub.name.startsWith('.') || !sub.isFile()) continue;
-        const ext = path.extname(sub.name).toLowerCase();
-        if (!MEDIA_EXTENSIONS.has(ext)) continue;
-
-        const absPath = path.join(fullPath, sub.name);
-        const stat = fs.statSync(absPath);
-        if (stat.size > MAX_CLOUDFLARE_BYTES) {
-          console.warn(
-            `[Medien] Skipping ${entry.name}/${sub.name} (${(stat.size / 1024 / 1024).toFixed(1)} MiB exceeds Cloudflare Pages 25 MiB limit)`
-          );
-          continue;
-        }
-
-        collectedFiles.push({
-          absPath,
-          relPath: path.join(entry.name, sub.name),
-          fileName: sub.name,
-          baseName: path.basename(sub.name, path.extname(sub.name)),
-          ext,
-          folderName: entry.name,
-          stat,
-        });
-      }
-    } else if (entry.isFile()) {
-      const ext = path.extname(entry.name).toLowerCase();
-      if (!MEDIA_EXTENSIONS.has(ext)) continue;
-
-      const stat = fs.statSync(fullPath);
-      if (stat.size > MAX_CLOUDFLARE_BYTES) {
-        console.warn(
-          `[Medien] Skipping ${entry.name} (${(stat.size / 1024 / 1024).toFixed(1)} MiB exceeds Cloudflare Pages 25 MiB limit)`
-        );
-        continue;
-      }
-
-      collectedFiles.push({
-        absPath: fullPath,
-        relPath: entry.name,
-        fileName: entry.name,
-        baseName: path.basename(entry.name, path.extname(entry.name)),
-        ext,
-        folderName: null,
-        stat,
-      });
+    if (lower === 'startseite') {
+      collectedFiles.push(...collectSeriesFromDir(entryPath, 'startseite', entry.name));
+    } else if (lower === 'exhibition') {
+      collectedFiles.push(...collectSeriesFromDir(entryPath, 'exhibition', entry.name));
+    } else {
+      // Fallback: treat any top-level project folder outside startseite/Exhibition as startseite
+      collectedFiles.push(...collectFolderFiles(entryPath, entry.name, 'startseite'));
     }
   }
 
@@ -301,7 +432,7 @@ export function loadMedienProjects() {
     return null;
   }
 
-  // Cleanly sync Medien -> public/medien (remove stale files that were deleted from Medien)
+  // Cleanly sync Medien -> public/medien (remove stale files that were deleted or moved)
   fs.mkdirSync(publicMedienDir, { recursive: true });
   const validRelPaths = new Set(collectedFiles.map((f) => f.relPath));
 
@@ -344,26 +475,31 @@ export function loadMedienProjects() {
       .map((seg) => encodeURIComponent(seg));
     const publicUrl = `/medien/${urlSegments.join('/')}`;
 
-    const { categoryKey, label, seriesPrefix, priority, order } = parseFilename(
-      file.baseName,
-      file.folderName
-    );
+    const folderKey = toSlug(file.folderName);
+    const metaMap = file.section === 'exhibition' ? EXHIBITION_META : STARTSEITE_META;
+    const meta = metaMap[folderKey];
+    const label = meta?.label || formatCategoryLabel(file.folderName);
 
+    const { seriesPrefix, priority, order } = parseFilenameOrder(file.baseName);
     const { width, height } = getMediaDimensions(file.absPath, file.ext);
     const isVideo = VIDEO_EXTENSIONS.has(file.ext);
 
-    if (!categoriesMap.has(categoryKey)) {
-      categoriesMap.set(categoryKey, {
-        key: categoryKey,
+    const mapKey = `${file.section}:${folderKey}`;
+    if (!categoriesMap.has(mapKey)) {
+      categoriesMap.set(mapKey, {
+        section: file.section,
+        folderKey,
         label,
+        coverFile: meta?.cover || null,
+        meta,
         items: [],
       });
     }
 
-    categoriesMap.get(categoryKey).items.push({
+    categoriesMap.get(mapKey).items.push({
       src: publicUrl,
       type: isVideo ? 'video' : 'image',
-      poster: isVideo ? VIDEO_POSTERS[categoryKey] : undefined,
+      poster: isVideo ? VIDEO_POSTERS[folderKey] : undefined,
       width,
       height,
       intrinsicAspect: `${width} / ${height}`,
@@ -374,11 +510,12 @@ export function loadMedienProjects() {
     });
   }
 
-  const medienProjects = [];
+  const startseiteProjects = [];
+  const exhibitionProjects = [];
   const seenSlugs = new Set();
 
   Array.from(categoriesMap.values()).forEach((cat, idx) => {
-    const sortedItems = sortCategoryItems(cat.items);
+    const sortedItems = sortCategoryItems(cat.items, cat.coverFile);
 
     let slug = toSlug(cat.label, idx);
     if (seenSlugs.has(slug)) {
@@ -387,9 +524,9 @@ export function loadMedienProjects() {
     seenSlugs.add(slug);
 
     const cover = sortedItems[0];
-
-    medienProjects.push({
+    const project = {
       slug,
+      folderKey: cat.folderKey,
       type: cover.type,
       src: cover.src,
       poster: cover.poster,
@@ -401,6 +538,7 @@ export function loadMedienProjects() {
       wide: false,
       aspect: 'auto',
       startIndex: 0,
+      meta: cat.meta,
       images: sortedItems.map((item, imageIndex) => ({
         src: item.src,
         type: item.type,
@@ -412,65 +550,42 @@ export function loadMedienProjects() {
         caption: '',
         index: imageIndex,
       })),
-    });
-  });
+    };
 
-  // Sort Row 1 projects in their fixed order (Samuel, Timon, Mercedes)
-  const row1Projects = medienProjects
-    .filter((p) => ROW_1_FOLDERS.has(p.slug))
-    .sort((a, b) => ROW_1_ORDER.indexOf(a.slug) - ROW_1_ORDER.indexOf(b.slug));
-
-  // Remaining Medien projects (e.g. DBB Double Header and future folders) go into Row 2+
-  const extraProjects = medienProjects.filter((p) => !ROW_1_FOLDERS.has(p.slug));
-
-  const rows = [];
-
-  // Row 1
-  const row1FallbackPlaceholders = (galleryRows[0]?.slides || []).slice(row1Projects.length);
-  rows.push({
-    id: 'row-01',
-    slides:
-      row1Projects.length >= 3
-        ? row1Projects.map((p) => ({ ...p, rowId: 'row-01' }))
-        : [...row1Projects, ...row1FallbackPlaceholders].map((p) => ({
-            ...p,
-            rowId: 'row-01',
-          })),
-  });
-
-  // Rows 2, 3, 4: Place extraProjects (like DBB Double Header in Row 2) and fill the rest with black placeholders
-  let extraCursor = 0;
-  for (let rIdx = 1; rIdx < galleryRows.length; rIdx++) {
-    const templateRow = galleryRows[rIdx];
-    const rowId = templateRow.id || `row-0${rIdx + 1}`;
-    const templateSlides = templateRow.slides || [];
-    const slides = [];
-
-    for (let sIdx = 0; sIdx < templateSlides.length; sIdx++) {
-      if (extraCursor < extraProjects.length) {
-        slides.push({
-          ...extraProjects[extraCursor],
-          rowId,
-        });
-        extraCursor++;
-      } else {
-        slides.push({
-          ...templateSlides[sIdx],
-          align: 'middle',
-          rowId,
-        });
-      }
+    if (cat.section === 'exhibition') {
+      exhibitionProjects.push(project);
+    } else {
+      startseiteProjects.push(project);
     }
+  });
 
-    rows.push({
-      id: rowId,
-      slides,
-    });
-  }
+  const orderedStartseite = sortByPreferredOrder(startseiteProjects, STARTSEITE_ORDER);
+  const orderedExhibition = sortByPreferredOrder(exhibitionProjects, EXHIBITION_ORDER);
 
-  // Combine real Medien projects + placeholder projects so every clickable card has a valid static page
-  const placeholderProjects = getAllProjects().filter((p) => !seenSlugs.has(p.slug));
-  const projects = [...medienProjects, ...placeholderProjects];
+  const rows =
+    orderedStartseite.length > 0 ? chunkIntoRows(orderedStartseite) : galleryRows;
+  const projects =
+    orderedStartseite.length > 0 ? orderedStartseite : getAllProjects();
 
-  return { rows, projects };
+  const exhibitionItems = orderedExhibition.map((project, idx) => {
+    const layout =
+      FALLBACK_EXHIBITION_LAYOUTS[idx % FALLBACK_EXHIBITION_LAYOUTS.length];
+    return {
+      id: `ex-${String(idx + 1).padStart(2, '0')}`,
+      slug: project.slug,
+      title: project.label,
+      location: project.meta?.location || '',
+      year: project.meta?.year || '',
+      count: `${String(project.images.length).padStart(2, '0')} Works`,
+      src: project.src,
+      width: project.width,
+      height: project.height,
+      aspect: project.intrinsicAspect || '3 / 4',
+      colSpan: project.meta?.colSpan || layout.colSpan,
+      offsetClass: project.meta?.offsetClass ?? layout.offsetClass,
+      images: project.images,
+    };
+  });
+
+  return { rows, projects, exhibitionItems };
 }

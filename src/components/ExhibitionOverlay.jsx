@@ -1,21 +1,54 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import LegalModal from './LegalModal.jsx';
 
+function formatCounter(num) {
+  return String(num).padStart(2, '0');
+}
+
 export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [] }) {
   const [selectedItem, setSelectedItem] = useState(null);
+  const [slideIndex, setSlideIndex] = useState(0);
   const [activeLegal, setActiveLegal] = useState(null);
+  const touchStartRef = useRef({ x: 0, y: 0 });
+
+  const activeSlides = selectedItem?.images?.length
+    ? selectedItem.images
+    : selectedItem
+      ? [{ src: selectedItem.src, type: 'image', width: selectedItem.width, height: selectedItem.height }]
+      : [];
+  const totalSlides = activeSlides.length;
+  const currentSlide = activeSlides[slideIndex] || activeSlides[0];
+
+  const goNext = useCallback(() => {
+    if (totalSlides <= 1) return;
+    setSlideIndex((prev) => (prev + 1) % totalSlides);
+  }, [totalSlides]);
+
+  const goPrev = useCallback(() => {
+    if (totalSlides <= 1) return;
+    setSlideIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
+  }, [totalSlides]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        if (selectedItem) {
+      if (activeLegal) return;
+      if (selectedItem) {
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          goNext();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          goPrev();
+        } else if (e.key === 'Escape') {
           setSelectedItem(null);
-        } else {
-          onClose();
         }
+        return;
+      }
+      if (e.key === 'Escape') {
+        onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -25,9 +58,54 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [isOpen, onClose, selectedItem]);
+  }, [isOpen, onClose, selectedItem, activeLegal, goNext, goPrev]);
+
+  useEffect(() => {
+    if (!selectedItem || totalSlides <= 1) return;
+    const neighbors = [
+      (slideIndex + 1) % totalSlides,
+      (slideIndex - 1 + totalSlides) % totalSlides,
+    ];
+    neighbors.forEach((idx) => {
+      const slide = activeSlides[idx];
+      if (slide?.src && slide.type !== 'video') {
+        const img = new Image();
+        img.src = slide.src;
+      }
+    });
+  }, [selectedItem, slideIndex, totalSlides, activeSlides]);
 
   if (!isOpen) return null;
+
+  const openSeries = (item) => {
+    setSelectedItem(item);
+    setSlideIndex(0);
+  };
+
+  const handleStageClick = (e) => {
+    if (totalSlides <= 1) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (e.clientX - rect.left < rect.width * 0.35) {
+      goPrev();
+    } else {
+      goNext();
+    }
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length !== 1) return;
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (totalSlides <= 1 || !e.changedTouches.length) return;
+    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+    if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy) * 1.1) {
+      if (dx < 0) goNext();
+      else goPrev();
+    }
+  };
 
   return (
     <>
@@ -69,7 +147,7 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
             </h2>
           </div>
           <p className="font-sans text-xs text-ink-muted tracking-[0.12px]">
-            Klick auf ein Werk zum Vergrößern
+            Klick auf eine Serie zum Öffnen
           </p>
         </div>
 
@@ -84,7 +162,7 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
                 {/* Media Card */}
                 <button
                   type="button"
-                  onClick={() => setSelectedItem(item)}
+                  onClick={() => openSeries(item)}
                   className="group cursor-pointer block w-full text-left active:opacity-85 transition-opacity"
                 >
                   <div
@@ -94,6 +172,8 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
                     <img
                       src={item.src}
                       alt={item.title}
+                      width={item.width}
+                      height={item.height}
                       loading={idx < 4 ? 'eager' : 'lazy'}
                       decoding="async"
                       className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
@@ -107,14 +187,18 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
                       <h3 className="font-display font-medium uppercase tracking-[0.02em] text-ink text-sm sm:text-[0.9375rem] group-hover:text-ink-muted transition-colors">
                         {item.title}
                       </h3>
-                      <p className="text-ink-muted text-[11px] tracking-[0.12px] mt-0.5">
-                        {item.location}
-                      </p>
+                      {item.location && (
+                        <p className="text-ink-muted text-[11px] tracking-[0.12px] mt-0.5">
+                          {item.location}
+                        </p>
+                      )}
                     </div>
 
                     <div className="text-right text-ink-muted text-[11px] font-mono tracking-tight shrink-0">
                       <span>{item.count}</span>
-                      <span className="block text-[10px] text-ink-muted/70">{item.year}</span>
+                      {item.year && (
+                        <span className="block text-[10px] text-ink-muted/70">{item.year}</span>
+                      )}
                     </div>
                   </div>
                 </button>
@@ -148,9 +232,9 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
         />
       </motion.div>
 
-      {/* Lightbox / Slideshow View */}
+      {/* Lightbox / Multi-Image Series Slideshow */}
       <AnimatePresence>
-        {selectedItem && (
+        {selectedItem && currentSlide && (
           <motion.div
             role="dialog"
             aria-modal="true"
@@ -160,28 +244,68 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={() => setSelectedItem(null)}
-            className="fixed inset-0 z-[60] bg-white/96 backdrop-blur-[3px] p-6 sm:p-12 flex flex-col items-center justify-center cursor-zoom-out"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className="fixed inset-0 z-[60] bg-white/96 backdrop-blur-[3px] p-6 sm:p-12 flex flex-col items-center justify-center cursor-zoom-out select-none"
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="max-h-[82vh] max-w-[90vw] flex flex-col items-center"
+              className="max-h-[86vh] max-w-[92vw] flex flex-col items-center cursor-default"
             >
-              <img
-                src={selectedItem.src}
-                alt={selectedItem.title}
-                className="max-h-[76vh] max-w-[90vw] object-contain shadow-sm border border-ink/10"
-              />
-              <div className="mt-4 flex items-center justify-between w-full font-sans text-xs text-ink tracking-[0.12px]">
+              <div
+                onClick={handleStageClick}
+                className={`flex items-center justify-center ${
+                  totalSlides > 1 ? 'cursor-pointer' : ''
+                }`}
+              >
+                <img
+                  src={currentSlide.src}
+                  alt={`${selectedItem.title} — ${slideIndex + 1}`}
+                  draggable={false}
+                  className="max-h-[76vh] max-w-[90vw] object-contain shadow-sm border border-ink/10 pointer-events-none"
+                />
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-4 w-full font-sans text-xs text-ink tracking-[0.12px]">
                 <div className="font-display font-medium uppercase tracking-[0.02em]">
-                  {selectedItem.title} — {selectedItem.location} ({selectedItem.year})
+                  {selectedItem.title}
+                  {selectedItem.location ? ` — ${selectedItem.location}` : ''}
+                  {selectedItem.year ? ` (${selectedItem.year})` : ''}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedItem(null)}
-                  className="inline-flex items-center min-h-[44px] px-2 -mr-2 text-ink-muted hover:text-ink active:opacity-70 uppercase tracking-wider text-[11px] cursor-pointer ml-6"
-                >
-                  Schließen ×
-                </button>
+
+                <div className="flex items-center gap-2 ml-auto">
+                  {totalSlides > 1 && (
+                    <div className="flex items-center gap-1 text-ink">
+                      <button
+                        type="button"
+                        onClick={goPrev}
+                        aria-label="Previous work"
+                        className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-ink-muted hover:text-ink active:opacity-70 transition-colors cursor-pointer"
+                      >
+                        ←
+                      </button>
+                      <span className="tabular-nums min-w-[3.5rem] text-center">
+                        {formatCounter(slideIndex + 1)} / {formatCounter(totalSlides)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={goNext}
+                        aria-label="Next work"
+                        className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-ink-muted hover:text-ink active:opacity-70 transition-colors cursor-pointer"
+                      >
+                        →
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedItem(null)}
+                    className="inline-flex items-center min-h-[44px] px-2 -mr-2 text-ink-muted hover:text-ink active:opacity-70 uppercase tracking-wider text-[11px] cursor-pointer"
+                  >
+                    Schließen ×
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -190,4 +314,3 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
     </>
   );
 }
-

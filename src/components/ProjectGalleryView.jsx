@@ -6,7 +6,7 @@ function formatCounter(num) {
   return String(num).padStart(2, '0');
 }
 
-export default function ProjectGalleryView({ identity, project }) {
+export default function ProjectGalleryView({ identity, project, exhibitionItems }) {
   const images = project?.images?.length
     ? project.images
     : [
@@ -170,7 +170,7 @@ export default function ProjectGalleryView({ identity, project }) {
           1. TOP FULL-VIEWPORT SLIDESHOW STAGE (Click Through 1 by 1)
          ===================================================================== */}
       <section className="relative h-dvh min-h-[540px] w-full flex flex-col justify-between overflow-hidden">
-        <HeaderBar identity={identity} showBackLink />
+        <HeaderBar identity={identity} showBackLink exhibitionItems={exhibitionItems} />
 
         {/* Main Interactive Single-Image Stage (Click or Swipe to Step Through — Zero White Flash) */}
         <main

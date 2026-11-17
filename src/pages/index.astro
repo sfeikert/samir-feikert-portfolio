@@ -3,15 +3,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import HeaderBar from '../components/HeaderBar.jsx';
 import DriftingGallery from '../components/DriftingGallery.jsx';
 import MinimalFooter from '../components/MinimalFooter.jsx';
-import { siteIdentity, galleryRows } from '../data/projects.js';
+import { siteIdentity, galleryRows, exhibitionItems as defaultExhibitionItems } from '../data/projects.js';
 import { loadMedienProjects } from '../utils/loadMedien.js';
 
 const medienData = loadMedienProjects();
 const activeRows = medienData?.rows?.length ? medienData.rows : galleryRows;
+const activeExhibitionItems = medienData?.exhibitionItems?.length
+  ? medienData.exhibitionItems
+  : defaultExhibitionItems;
 ---
 
 <BaseLayout title="Samir Feikert — Photographer">
-  <HeaderBar client:load identity={siteIdentity} />
+  <HeaderBar client:load identity={siteIdentity} exhibitionItems={activeExhibitionItems} />
   <main id="main-content">
     <DriftingGallery client:load identity={siteIdentity} rows={activeRows} />
   </main>

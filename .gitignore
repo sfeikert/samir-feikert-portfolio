@@ -3,6 +3,9 @@ dist/
 .astro/
 public/medien/
 
+# Full-resolution originals (local backup only, Medien/ holds the web versions)
+Medien-Originale/
+
 # Dependencies
 node_modules/
 

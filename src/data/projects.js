@@ -452,6 +452,7 @@ export function toProjectSlug(slide, fallbackIndex = 0) {
   if (slide?.slug) return slide.slug;
   if (slide?.label) {
     return slide.label
+      .normalize('NFC')
       .toLowerCase()
       .replace(/ä/g, 'ae')
       .replace(/ö/g, 'oe')
