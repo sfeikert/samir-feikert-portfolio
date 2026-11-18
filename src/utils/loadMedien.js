@@ -36,6 +36,9 @@ const STARTSEITE_ORDER = [
   'porsche-rooling-shots',
   'samuel-ausfahrt-stetten',
   'hannes-vitra-nacht',
+  'heizr-alles',
+  'samuel-wenkenpark',
+  'landrover-tuellinger',
 ];
 
 const STARTSEITE_META = {
@@ -87,6 +90,18 @@ const STARTSEITE_META = {
     label: 'Hannes — Vitra',
     cover: '_DSF2218.jpg',
   },
+  'heizr-alles': {
+    label: 'Heizr',
+    cover: '_DSF6976.jpg',
+  },
+  'samuel-wenkenpark': {
+    label: 'Samuel — Wenkenpark',
+    cover: '_DSF6872.jpg',
+  },
+  'landrover-tuellinger': {
+    label: 'Defender — Tüllinger',
+    cover: '_DSF5730-Bearbeitet.jpg',
+  },
 };
 
 // Curated order, clean labels, covers, and asymmetrical collage grid for Medien/Exhibition/
@@ -95,6 +110,7 @@ const EXHIBITION_ORDER = [
   'soerenberg',
   'avia-tankstelle',
   'landrover-roadtrip-frankreich',
+  'ente-trabi-sonnenuntergang',
 ];
 
 const EXHIBITION_META = {
@@ -113,14 +129,20 @@ const EXHIBITION_META = {
   'avia-tankstelle': {
     label: 'Avia — Night',
     cover: '_MG_1904.jpg',
-    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-5',
-    offsetClass: 'lg:-mt-6',
+    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-4',
+    offsetClass: 'lg:-mt-4',
   },
   'landrover-roadtrip-frankreich': {
     label: 'France — Roadtrip',
     cover: '_DSF8081.jpg',
-    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-6 lg:col-start-7',
-    offsetClass: 'lg:mt-14',
+    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-4',
+    offsetClass: 'lg:mt-16',
+  },
+  'ente-trabi-sonnenuntergang': {
+    label: '2CV & Trabant — Sunset',
+    cover: '_DSF5939-Bearbeitet.jpg',
+    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-4',
+    offsetClass: 'lg:mt-4',
   },
 };
 
@@ -386,10 +408,13 @@ function chunkIntoRows(projects, maxPerRow = MAX_SLIDES_PER_ROW) {
   for (let r = 0; r < rowCount; r++) {
     const count = baseSize + (r < remainder ? 1 : 0);
     const rowId = `row-${String(r + 1).padStart(2, '0')}`;
-    rows.push({
-      id: rowId,
-      slides: projects.slice(cursor, cursor + count).map((p) => ({ ...p, rowId })),
-    });
+    const slides = projects.slice(cursor, cursor + count).map((p) => ({ ...p, rowId }));
+    // Keep 3-slide rows at 100vw (50vw + 25vw + 25vw) by expanding one landscape slide
+    if (slides.length === 3 && !slides.some((s) => s.wide)) {
+      const landscape = slides.find((s) => s.width > s.height);
+      if (landscape) landscape.wide = true;
+    }
+    rows.push({ id: rowId, slides });
     cursor += count;
   }
 
