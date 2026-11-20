@@ -38,6 +38,7 @@ function DriftingRow({ row, rowIndex }) {
     lastPointerTime: 0,
     velocity: 0,
     momentumVel: 0,
+    scrollPending: 0,
     pauseUntil: 0,
     suppressClickUntil: 0,
     autoDrift: true,
@@ -147,6 +148,7 @@ function DriftingRow({ row, rowIndex }) {
       st.lastPointerTime = now;
       st.velocity = 0;
       st.momentumVel = 0;
+      st.scrollPending = 0;
     };
 
     const onTouchMove = (e) => {
@@ -236,6 +238,7 @@ function DriftingRow({ row, rowIndex }) {
       st.lastPointerTime = now;
       st.velocity = 0;
       st.momentumVel = 0;
+      st.scrollPending = 0;
     };
 
     const onWindowMouseMove = (e) => {
@@ -292,6 +295,7 @@ function DriftingRow({ row, rowIndex }) {
       }
       const now = performance.now();
       st.momentumVel = 0;
+      st.scrollPending = 0;
       st.x -= e.deltaX;
       st.pauseUntil = now + PAUSE_AFTER_INTERACTION_MS;
       applyTransform();
@@ -308,11 +312,18 @@ function DriftingRow({ row, rowIndex }) {
 
     let rafId;
     let prevTime = performance.now();
-    const baseSpeedPerFrame = 0.35;
+    let lastScrollY = Math.max(0, window.scrollY);
+    const baseSpeedPerFrame = 0.245;
+    const SCROLL_DRIVE_RATIO = 0.2;
+    const direction = rowIndex % 2 === 0 ? 1 : -1;
 
     const tick = (now) => {
       const dtFrames = Math.min(2.5, Math.max(0.1, (now - prevTime) / 16.6667));
       prevTime = now;
+
+      const currentScrollY = Math.max(0, window.scrollY);
+      const scrollDelta = Math.min(180, Math.abs(currentScrollY - lastScrollY));
+      lastScrollY = currentScrollY;
 
       if (isVisible && !st.isDragging && !st.isPointerDown) {
         if (Math.abs(st.momentumVel) > 0.02) {
@@ -320,19 +331,31 @@ function DriftingRow({ row, rowIndex }) {
           st.momentumVel *= Math.pow(0.89, dtFrames);
           // Keep resetting the 2.2s pause timer until the touch flick comes to a complete stop
           st.pauseUntil = now + PAUSE_AFTER_INTERACTION_MS;
+          st.scrollPending = 0;
           applyTransform();
         } else {
           st.momentumVel = 0;
           if (st.autoDrift && now >= st.pauseUntil) {
+            if (scrollDelta > 0) {
+              st.scrollPending += scrollDelta * SCROLL_DRIVE_RATIO;
+            }
+            const scrollStep = st.scrollPending * (1 - Math.pow(0.84, dtFrames));
+            st.scrollPending -= scrollStep;
+            if (st.scrollPending < 0.05) st.scrollPending = 0;
+
             const elapsedSinceResume = now - st.pauseUntil;
             const rampFactor =
               st.pauseUntil > 0
                 ? Math.min(1, elapsedSinceResume / RESUME_RAMP_MS)
                 : 1;
-            st.x += baseSpeedPerFrame * rampFactor * dtFrames;
+            st.x += direction * (baseSpeedPerFrame * dtFrames + scrollStep) * rampFactor;
             applyTransform();
+          } else {
+            st.scrollPending = 0;
           }
         }
+      } else {
+        st.scrollPending = 0;
       }
 
       rafId = requestAnimationFrame(tick);

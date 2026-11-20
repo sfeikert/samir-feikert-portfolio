@@ -33,12 +33,15 @@ const STARTSEITE_ORDER = [
   'jamelia-shooting',
   'shooting-hannes',
   'passione-engadina-22',
-  'porsche-rooling-shots',
+  'allinabasement',
   'samuel-ausfahrt-stetten',
   'hannes-vitra-nacht',
   'heizr-alles',
   'samuel-wenkenpark',
   'landrover-tuellinger',
+  'porsche-rooling-shots',
+  'michael',
+  'muriel',
 ];
 
 const STARTSEITE_META = {
@@ -78,9 +81,9 @@ const STARTSEITE_META = {
     label: 'Passione Engadina',
     cover: '_DSF7117-3.jpg',
   },
-  'porsche-rooling-shots': {
-    label: 'Porsche — Rolling',
-    cover: '3V8A5576.jpg',
+  allinabasement: {
+    label: 'All in a Basement',
+    cover: '_DSF4714.jpg',
   },
   'samuel-ausfahrt-stetten': {
     label: 'Samuel — Stetten',
@@ -102,15 +105,30 @@ const STARTSEITE_META = {
     label: 'Defender — Tüllinger',
     cover: '_DSF5730-Bearbeitet.jpg',
   },
+  'porsche-rooling-shots': {
+    label: 'Porsche — Rolling',
+    cover: '3V8A5576.jpg',
+  },
+  michael: {
+    label: 'Michael',
+    cover: '_DSF1506.jpg',
+  },
+  muriel: {
+    label: 'Muriel',
+    cover: '_MG_1809-Bearbeitet.jpg',
+  },
 };
 
 // Curated order, clean labels, covers, and asymmetrical collage grid for Medien/Exhibition/
 const EXHIBITION_ORDER = [
   'island',
   'soerenberg',
-  'avia-tankstelle',
+  'istanbul',
+  'cinque-terre',
+  'marokko',
   'landrover-roadtrip-frankreich',
   'ente-trabi-sonnenuntergang',
+  'avia-tankstelle',
 ];
 
 const EXHIBITION_META = {
@@ -126,23 +144,41 @@ const EXHIBITION_META = {
     colSpan: 'col-span-12 sm:col-span-5 lg:col-span-7',
     offsetClass: 'lg:mt-20',
   },
-  'avia-tankstelle': {
-    label: 'Avia — Night',
-    cover: '_MG_1904.jpg',
-    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-4',
+  istanbul: {
+    label: 'Istanbul',
+    cover: 'DSCF9147.JPG',
+    colSpan: 'col-span-12 sm:col-span-7 lg:col-span-7',
     offsetClass: 'lg:-mt-4',
+  },
+  'cinque-terre': {
+    label: 'Cinque Terre',
+    cover: '_DSF2618.jpg',
+    colSpan: 'col-span-12 sm:col-span-5 lg:col-span-5',
+    offsetClass: 'lg:mt-16',
+  },
+  marokko: {
+    label: 'Morocco',
+    cover: '_DSF6548.jpg',
+    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-5',
+    offsetClass: 'lg:-mt-6',
   },
   'landrover-roadtrip-frankreich': {
     label: 'France — Roadtrip',
     cover: '_DSF8081.jpg',
-    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-4',
-    offsetClass: 'lg:mt-16',
+    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-6 lg:col-start-7',
+    offsetClass: 'lg:mt-14',
   },
   'ente-trabi-sonnenuntergang': {
     label: '2CV & Trabant — Sunset',
     cover: '_DSF5939-Bearbeitet.jpg',
-    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-4',
-    offsetClass: 'lg:mt-4',
+    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-6',
+    offsetClass: 'lg:-mt-4',
+  },
+  'avia-tankstelle': {
+    label: 'Avia — Night',
+    cover: '_MG_1904.jpg',
+    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-5 lg:col-start-8',
+    offsetClass: 'lg:mt-16',
   },
 };
 
