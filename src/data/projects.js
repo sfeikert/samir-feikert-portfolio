@@ -25,6 +25,10 @@ export const siteIdentity = {
   subtitle: 'Ausgebildeter Fotograf aus Düsseldorf',
   email: 'contact.samirfeikert@gmail.com',
   phone: '+49 176 31501119',
+  instagram: {
+    handle: '@samirfeikert',
+    url: 'https://www.instagram.com/samirfeikert/',
+  },
   address: {
     street: 'Ruhrtalstraße 16',
     city: '40233 Düsseldorf',

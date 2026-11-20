@@ -47,8 +47,6 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const anfrageHref = `mailto:${identity.email}?subject=Projektanfrage%20%E2%80%94%20Samir%20Feikert`;
-
   return (
     <>
       <header
@@ -173,12 +171,13 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
               </span>
             </a>
 
-            <a
-              href={anfrageHref}
+            <button
+              type="button"
+              onClick={() => setActiveOverlay('inquiry')}
               className="inline-flex items-center justify-center min-h-[38px] font-sans font-normal text-xs tracking-[0.14px] text-ink bg-white/85 hover:bg-white active:opacity-80 border border-ink/20 hover:border-ink/50 backdrop-blur-sm rounded-full px-4 py-1.5 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
             >
               Anfrage
-            </a>
+            </button>
           </div>
         )}
       </header>
@@ -223,22 +222,26 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
             >
               Exhibition
             </button>
-            <a
-              href={anfrageHref}
-              onClick={() => setMobileDrawerOpen(false)}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveOverlay('inquiry');
+                setMobileDrawerOpen(false);
+              }}
               className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
             >
               Anfrage
-            </a>
+            </button>
           </motion.nav>
         )}
       </AnimatePresence>
 
       {/* About & Exhibition Fullscreen Overlays */}
       <AnimatePresence>
-        {activeOverlay === 'about' && (
+        {(activeOverlay === 'about' || activeOverlay === 'inquiry') && (
           <AboutOverlay
             isOpen={true}
+            initialSection={activeOverlay}
             onClose={() => setActiveOverlay(null)}
             identity={identity}
             content={aboutContent}
@@ -277,12 +280,13 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
             </button>
           </div>
 
-          <a
-            href={anfrageHref}
+          <button
+            type="button"
+            onClick={() => setActiveOverlay('inquiry')}
             className="inline-flex items-center justify-center min-h-[38px] font-sans font-normal text-xs tracking-[0.14px] text-ink bg-white/85 hover:bg-white active:opacity-80 border border-ink/20 hover:border-ink/50 backdrop-blur-sm rounded-full px-4 py-1.5 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
           >
             Anfrage
-          </a>
+          </button>
         </div>
       )}
     </>
