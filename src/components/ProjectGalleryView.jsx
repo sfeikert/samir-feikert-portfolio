@@ -35,6 +35,8 @@ export default function ProjectGalleryView({ identity, project, exhibitionItems 
   const pointerRef = useRef({
     startX: 0,
     startY: 0,
+    lastX: 0,
+    lastY: 0,
     isDown: false,
   });
 

@@ -450,7 +450,6 @@ function DriftingRow({ row, rowIndex }) {
                         height={slide.height || 1350}
                         draggable={false}
                         loading={isEagerRow ? 'eager' : 'lazy'}
-                        fetchPriority={rowIndex === 0 ? 'high' : 'auto'}
                         decoding={rowIndex === 0 ? 'sync' : 'async'}
                         className={mediaClass}
                       />

@@ -119,74 +119,70 @@ const STARTSEITE_META = {
   },
 };
 
-// Curated order, clean labels, covers, and asymmetrical collage grid for Medien/Exhibition/
+// Curated order, clean labels, covers, and overlapping collage layout for Medien/Exhibition/
 const EXHIBITION_ORDER = [
   'island',
+  'avia-tankstelle',
   'soerenberg',
-  'istanbul',
   'cinque-terre',
   'marokko',
+  'istanbul',
   'landrover-roadtrip-frankreich',
   'ente-trabi-sonnenuntergang',
-  'avia-tankstelle',
 ];
 
 const EXHIBITION_META = {
   island: {
     label: 'Iceland',
-    cover: '_MG_0152.jpg',
-    colSpan: 'col-span-12 sm:col-span-7 lg:col-span-5',
-    offsetClass: 'lg:mt-4',
-  },
-  soerenberg: {
-    label: 'Sörenberg',
-    cover: '_DSF2170.jpg',
-    colSpan: 'col-span-12 sm:col-span-5 lg:col-span-7',
-    offsetClass: 'lg:mt-20',
-  },
-  istanbul: {
-    label: 'Istanbul',
-    cover: 'DSCF9147.JPG',
-    colSpan: 'col-span-12 sm:col-span-7 lg:col-span-7',
-    offsetClass: 'lg:-mt-4',
-  },
-  'cinque-terre': {
-    label: 'Cinque Terre',
-    cover: '_DSF2618.jpg',
-    colSpan: 'col-span-12 sm:col-span-5 lg:col-span-5',
-    offsetClass: 'lg:mt-16',
-  },
-  marokko: {
-    label: 'Morocco',
-    cover: '_DSF6548.jpg',
-    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-5',
-    offsetClass: 'lg:-mt-6',
-  },
-  'landrover-roadtrip-frankreich': {
-    label: 'France — Roadtrip',
-    cover: '_DSF8081.jpg',
-    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-6 lg:col-start-7',
-    offsetClass: 'lg:mt-14',
-  },
-  'ente-trabi-sonnenuntergang': {
-    label: '2CV & Trabant — Sunset',
-    cover: '_DSF5939-Bearbeitet.jpg',
-    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-6',
-    offsetClass: 'lg:-mt-4',
+    cover: '_MG_0609.jpg',
+    collage: { left: 7.5, top: 9, width: 28, zIndex: 2 },
   },
   'avia-tankstelle': {
     label: 'Avia — Night',
     cover: '_MG_1904.jpg',
-    colSpan: 'col-span-12 sm:col-span-6 lg:col-span-5 lg:col-start-8',
-    offsetClass: 'lg:mt-16',
+    collage: { left: 29, top: 3, width: 19, zIndex: 4 },
+  },
+  soerenberg: {
+    label: 'Sörenberg',
+    cover: '_DSF2111.jpg',
+    collage: { left: 44.5, top: 6.5, width: 31.5, zIndex: 3 },
+  },
+  'cinque-terre': {
+    label: 'Cinque Terre',
+    cover: '_DSF2618.jpg',
+    collage: { left: 71.5, top: 4.5, width: 21, zIndex: 5 },
+  },
+  marokko: {
+    label: 'Morocco',
+    cover: '_DSF6448.jpg',
+    collage: { left: 8.5, top: 37.5, width: 29.5, zIndex: 5 },
+  },
+  istanbul: {
+    label: 'Istanbul',
+    cover: 'DSCF9147.JPG',
+    collage: { left: 32.5, top: 35.5, width: 35, zIndex: 6 },
+  },
+  'landrover-roadtrip-frankreich': {
+    label: 'France — Roadtrip',
+    cover: '_DSF8081.jpg',
+    collage: { left: 48, top: 50, width: 19.5, zIndex: 7 },
+  },
+  'ente-trabi-sonnenuntergang': {
+    label: '2CV & Trabant — Sunset',
+    cover: '_DSF5941-Bearbeitet.jpg',
+    collage: { left: 65, top: 41.5, width: 21, zIndex: 6 },
   },
 };
 
-const FALLBACK_EXHIBITION_LAYOUTS = [
-  { colSpan: 'col-span-12 sm:col-span-7 lg:col-span-5', offsetClass: 'lg:mt-4' },
-  { colSpan: 'col-span-12 sm:col-span-5 lg:col-span-7', offsetClass: 'lg:mt-20' },
-  { colSpan: 'col-span-12 sm:col-span-6 lg:col-span-5', offsetClass: 'lg:-mt-6' },
-  { colSpan: 'col-span-12 sm:col-span-6 lg:col-span-6 lg:col-start-7', offsetClass: 'lg:mt-14' },
+const FALLBACK_COLLAGE_SLOTS = [
+  { left: 7.5, top: 9, width: 28, zIndex: 2 },
+  { left: 29, top: 3, width: 19, zIndex: 4 },
+  { left: 44.5, top: 6.5, width: 31.5, zIndex: 3 },
+  { left: 71.5, top: 4.5, width: 21, zIndex: 5 },
+  { left: 8.5, top: 37.5, width: 29.5, zIndex: 5 },
+  { left: 32.5, top: 35.5, width: 35, zIndex: 6 },
+  { left: 48, top: 50, width: 19.5, zIndex: 7 },
+  { left: 65, top: 41.5, width: 21, zIndex: 6 },
 ];
 
 // Pre-generated poster frames for instant display on iOS Safari (even in Low Power Mode)
@@ -626,25 +622,23 @@ export function loadMedienProjects() {
   const rows =
     orderedStartseite.length > 0 ? chunkIntoRows(orderedStartseite) : galleryRows;
   const projects =
-    orderedStartseite.length > 0 ? orderedStartseite : getAllProjects();
+    orderedStartseite.length > 0 || orderedExhibition.length > 0
+      ? [...orderedStartseite, ...orderedExhibition]
+      : getAllProjects();
 
   const exhibitionItems = orderedExhibition.map((project, idx) => {
-    const layout =
-      FALLBACK_EXHIBITION_LAYOUTS[idx % FALLBACK_EXHIBITION_LAYOUTS.length];
+    const slot =
+      project.meta?.collage ||
+      FALLBACK_COLLAGE_SLOTS[idx % FALLBACK_COLLAGE_SLOTS.length];
     return {
       id: `ex-${String(idx + 1).padStart(2, '0')}`,
       slug: project.slug,
       title: project.label,
-      location: project.meta?.location || '',
-      year: project.meta?.year || '',
-      count: `${String(project.images.length).padStart(2, '0')} Works`,
       src: project.src,
       width: project.width,
       height: project.height,
       aspect: project.intrinsicAspect || '3 / 4',
-      colSpan: project.meta?.colSpan || layout.colSpan,
-      offsetClass: project.meta?.offsetClass ?? layout.offsetClass,
-      images: project.images,
+      collage: slot,
     };
   });
 

@@ -105,9 +105,16 @@ export default function AboutOverlay({
           type="button"
           onClick={onClose}
           aria-label="Schließen"
-          className="inline-flex items-center justify-center min-h-[44px] px-3 -mr-3 font-sans font-normal text-xs uppercase tracking-[0.12px] text-ink-muted hover:text-ink active:opacity-70 transition-colors cursor-pointer"
+          className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] -mr-3 text-ink hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
         >
-          Schließen ×
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 16 16"
+            className="w-3.5 h-3.5 fill-none stroke-current"
+            strokeWidth="1.5"
+          >
+            <path d="M2 2L14 14M14 2L2 14" />
+          </svg>
         </button>
       </div>
 
