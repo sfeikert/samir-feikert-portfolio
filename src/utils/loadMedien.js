@@ -136,41 +136,49 @@ const EXHIBITION_META = {
     label: 'Iceland',
     cover: '_MG_0609.jpg',
     collage: { left: 7.5, top: 9, width: 28, zIndex: 2 },
+    mobileCollage: { left: 5, top: 2, width: 56, zIndex: 2 },
   },
   'avia-tankstelle': {
     label: 'Avia — Night',
     cover: '_MG_1904.jpg',
     collage: { left: 29, top: 3, width: 19, zIndex: 4 },
+    mobileCollage: { left: 52.5, top: 0.5, width: 44, zIndex: 4 },
   },
   soerenberg: {
     label: 'Sörenberg',
     cover: '_DSF2111.jpg',
     collage: { left: 44.5, top: 6.5, width: 31.5, zIndex: 3 },
+    mobileCollage: { left: 1.5, top: 17.5, width: 62, zIndex: 5 },
   },
   'cinque-terre': {
     label: 'Cinque Terre',
     cover: '_DSF2618.jpg',
     collage: { left: 71.5, top: 4.5, width: 21, zIndex: 5 },
+    mobileCollage: { left: 55, top: 27.5, width: 43, zIndex: 6 },
   },
   marokko: {
     label: 'Morocco',
     cover: '_DSF6448.jpg',
     collage: { left: 8.5, top: 37.5, width: 29.5, zIndex: 5 },
+    mobileCollage: { left: 5.5, top: 34.5, width: 58, zIndex: 7 },
   },
   istanbul: {
     label: 'Istanbul',
     cover: 'DSCF9147.JPG',
     collage: { left: 32.5, top: 35.5, width: 35, zIndex: 6 },
+    mobileCollage: { left: 19, top: 49.5, width: 70, zIndex: 8 },
   },
   'landrover-roadtrip-frankreich': {
     label: 'France — Roadtrip',
     cover: '_DSF8081.jpg',
     collage: { left: 48, top: 50, width: 19.5, zIndex: 7 },
+    mobileCollage: { left: 3.5, top: 65.5, width: 47, zIndex: 6 },
   },
   'ente-trabi-sonnenuntergang': {
     label: '2CV & Trabant — Sunset',
     cover: '_DSF5941-Bearbeitet.jpg',
     collage: { left: 65, top: 41.5, width: 21, zIndex: 6 },
+    mobileCollage: { left: 47.5, top: 61.5, width: 49, zIndex: 7 },
   },
 };
 
@@ -183,6 +191,17 @@ const FALLBACK_COLLAGE_SLOTS = [
   { left: 32.5, top: 35.5, width: 35, zIndex: 6 },
   { left: 48, top: 50, width: 19.5, zIndex: 7 },
   { left: 65, top: 41.5, width: 21, zIndex: 6 },
+];
+
+const FALLBACK_MOBILE_COLLAGE_SLOTS = [
+  { left: 5, top: 2, width: 56, zIndex: 2 },
+  { left: 52.5, top: 0.5, width: 44, zIndex: 4 },
+  { left: 1.5, top: 17.5, width: 62, zIndex: 5 },
+  { left: 55, top: 27.5, width: 43, zIndex: 6 },
+  { left: 5.5, top: 34.5, width: 58, zIndex: 7 },
+  { left: 19, top: 49.5, width: 70, zIndex: 8 },
+  { left: 3.5, top: 65.5, width: 47, zIndex: 6 },
+  { left: 47.5, top: 61.5, width: 49, zIndex: 7 },
 ];
 
 // Pre-generated poster frames for instant display on iOS Safari (even in Low Power Mode)
@@ -630,6 +649,9 @@ export function loadMedienProjects() {
     const slot =
       project.meta?.collage ||
       FALLBACK_COLLAGE_SLOTS[idx % FALLBACK_COLLAGE_SLOTS.length];
+    const mobileSlot =
+      project.meta?.mobileCollage ||
+      FALLBACK_MOBILE_COLLAGE_SLOTS[idx % FALLBACK_MOBILE_COLLAGE_SLOTS.length];
     return {
       id: `ex-${String(idx + 1).padStart(2, '0')}`,
       slug: project.slug,
@@ -639,6 +661,7 @@ export function loadMedienProjects() {
       height: project.height,
       aspect: project.intrinsicAspect || '3 / 4',
       collage: slot,
+      mobileCollage: mobileSlot,
     };
   });
 

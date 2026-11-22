@@ -2,17 +2,6 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import LegalModal from './LegalModal.jsx';
 
-const MOBILE_OFFSETS = [
-  'translate-x-1 z-[2]',
-  '-translate-x-2 mt-6 z-[4]',
-  'translate-x-2 -mt-6 z-[5]',
-  '-translate-x-1 -mt-2 z-[3]',
-  'translate-x-1 -mt-5 z-[6]',
-  '-translate-x-2 -mt-3 z-[5]',
-  'translate-x-2 -mt-6 z-[7]',
-  '-translate-x-1 -mt-2 z-[4]',
-];
-
 export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [] }) {
   const [activeLegal, setActiveLegal] = useState(null);
 
@@ -70,7 +59,7 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
       </div>
 
       {/* Overlapping Photo Cluster (Zero Captions, Direct Project Links) */}
-      <div className="flex-1 w-full flex items-center justify-center px-4 sm:px-8 lg:px-10 py-8 sm:py-10">
+      <div className="flex-1 w-full flex items-start md:items-center justify-center px-3 sm:px-8 lg:px-10 py-5 sm:py-10">
         {/* Desktop / Tablet Collage Canvas */}
         <div className="hidden md:block relative w-full max-w-[1200px] aspect-[1200/740]">
           {items.map((item, idx) => {
@@ -109,29 +98,42 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
           })}
         </div>
 
-        {/* Mobile Staggered Overlapping Cluster */}
-        <div className="grid grid-cols-2 md:hidden w-full max-w-md items-start">
-          {items.map((item, idx) => (
-            <a
-              key={item.id}
-              href={`/projects/${item.slug}`}
-              aria-label={`Open project ${item.title}`}
-              className={`relative block overflow-hidden bg-ink-tint active:opacity-85 transition-opacity ${
-                MOBILE_OFFSETS[idx % MOBILE_OFFSETS.length]
-              }`}
-            >
-              <img
-                src={item.src}
-                alt={item.title}
-                width={item.width}
-                height={item.height}
-                loading={idx < 4 ? 'eager' : 'lazy'}
-                decoding="async"
-                draggable={false}
-                className="block w-full h-auto object-cover"
-              />
-            </a>
-          ))}
+        {/* Mobile Overlapping Collage Canvas */}
+        <div className="md:hidden relative w-full max-w-[440px] aspect-[390/860]">
+          {items.map((item, idx) => {
+            const slot = item.mobileCollage || {
+              left: idx % 2 === 0 ? 3 : 48,
+              top: Math.floor(idx / 2) * 23 + 2,
+              width: 50,
+              zIndex: idx + 2,
+            };
+
+            return (
+              <a
+                key={item.id}
+                href={`/projects/${item.slug}`}
+                aria-label={`Open project ${item.title}`}
+                style={{
+                  left: `${slot.left}%`,
+                  top: `${slot.top}%`,
+                  width: `${slot.width}%`,
+                  zIndex: slot.zIndex,
+                }}
+                className="absolute block overflow-hidden bg-ink-tint transition-transform duration-150 ease-out active:scale-[0.985] active:!z-30 focus-visible:!z-30 cursor-pointer"
+              >
+                <img
+                  src={item.src}
+                  alt={item.title}
+                  width={item.width}
+                  height={item.height}
+                  loading={idx < 4 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  draggable={false}
+                  className="block w-full h-auto object-cover"
+                />
+              </a>
+            );
+          })}
         </div>
       </div>
 
