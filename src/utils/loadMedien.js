@@ -36,6 +36,7 @@ const STARTSEITE_ORDER = [
   'allinabasement',
   'samuel-ausfahrt-stetten',
   'hannes-vitra-nacht',
+  'basketball-portraits',
   'heizr-alles',
   'samuel-wenkenpark',
   'landrover-tuellinger',
@@ -93,6 +94,10 @@ const STARTSEITE_META = {
     label: 'Hannes — Vitra',
     cover: '_DSF2218.jpg',
   },
+  'basketball-portraits': {
+    label: 'Basketball — Portraits',
+    cover: 'IMG_2192.jpg',
+  },
   'heizr-alles': {
     label: 'Heizr',
     cover: '_DSF6976.jpg',
@@ -119,15 +124,24 @@ const STARTSEITE_META = {
   },
 };
 
-// Curated order, clean labels, covers, and overlapping collage layout for Medien/Exhibition/
+// Curated order, clean labels, covers, and continuous irregular collage layout for Medien/Exhibition/
 const EXHIBITION_ORDER = [
   'island',
-  'avia-tankstelle',
+  'tokyo-japan',
   'soerenberg',
-  'cinque-terre',
+  'avia-tankstelle',
+  'indien-street-photography',
+  'alpen',
   'marokko',
+  'vietnam',
+  'nepal',
+  'cinque-terre',
   'istanbul',
   'landrover-roadtrip-frankreich',
+  'kambodscha',
+  'jordanien',
+  'indien-railway',
+  'tokyo-shinjuku',
   'ente-trabi-sonnenuntergang',
 ];
 
@@ -135,79 +149,138 @@ const EXHIBITION_META = {
   island: {
     label: 'Iceland',
     cover: '_MG_0609.jpg',
-    collage: { left: 7.5, top: 9, width: 28, zIndex: 2 },
-    mobileCollage: { left: 5, top: 2, width: 56, zIndex: 2 },
+    collage: { left: 3.5, top: 2, width: 27.5, zIndex: 2 },
+    mobileCollage: { left: 3, top: 0.8, width: 56, zIndex: 2 },
   },
-  'avia-tankstelle': {
-    label: 'Avia — Night',
-    cover: '_MG_1904.jpg',
-    collage: { left: 29, top: 3, width: 19, zIndex: 4 },
-    mobileCollage: { left: 52.5, top: 0.5, width: 44, zIndex: 4 },
+  'tokyo-japan': {
+    label: 'Tokyo — Japan',
+    cover: 'AE2E947B-066A-427F-B037-FD9B7F0F38B9.mp4',
+    collage: { left: 28, top: 0.5, width: 19, zIndex: 4 },
+    mobileCollage: { left: 52.5, top: 0.4, width: 44, zIndex: 4 },
   },
   soerenberg: {
     label: 'Sörenberg',
     cover: '_DSF2111.jpg',
-    collage: { left: 44.5, top: 6.5, width: 31.5, zIndex: 3 },
-    mobileCollage: { left: 1.5, top: 17.5, width: 62, zIndex: 5 },
+    collage: { left: 52, top: 3.5, width: 28.5, zIndex: 3 },
+    mobileCollage: { left: 12, top: 7.4, width: 62, zIndex: 5 },
+  },
+  'avia-tankstelle': {
+    label: 'Avia — Night',
+    cover: '_MG_1904.jpg',
+    collage: { left: 77.5, top: 1.2, width: 18.5, zIndex: 5 },
+    mobileCollage: { left: 55.5, top: 14.5, width: 41.5, zIndex: 6 },
+  },
+  'indien-street-photography': {
+    label: 'India — Street',
+    cover: 'IMG_2407.mp4',
+    collage: { left: 9, top: 16.5, width: 26.5, zIndex: 6 },
+    mobileCollage: { left: 3.5, top: 19.2, width: 55, zIndex: 7 },
+  },
+  alpen: {
+    label: 'Alps',
+    cover: 'R0009867.jpeg',
+    collage: { left: 42, top: 14.5, width: 20.5, zIndex: 5 },
+    mobileCollage: { left: 44, top: 25.6, width: 46.5, zIndex: 5 },
   },
   'cinque-terre': {
     label: 'Cinque Terre',
     cover: '_DSF2618.jpg',
-    collage: { left: 71.5, top: 4.5, width: 21, zIndex: 5 },
-    mobileCollage: { left: 55, top: 27.5, width: 43, zIndex: 6 },
+    collage: { left: 68, top: 21.5, width: 19.5, zIndex: 4 },
+    mobileCollage: { left: 4, top: 52, width: 43.5, zIndex: 6 },
   },
   marokko: {
     label: 'Morocco',
     cover: '_DSF6448.jpg',
-    collage: { left: 8.5, top: 37.5, width: 29.5, zIndex: 5 },
-    mobileCollage: { left: 5.5, top: 34.5, width: 58, zIndex: 7 },
+    collage: { left: 2.5, top: 33.5, width: 28.5, zIndex: 3 },
+    mobileCollage: { left: 1.5, top: 33.8, width: 57.5, zIndex: 6 },
+  },
+  vietnam: {
+    label: 'Vietnam',
+    cover: 'copy_3B1ACCDE-A781-4F23-B82E-C15A9559FAAC.mp4',
+    collage: { left: 28.5, top: 31, width: 18, zIndex: 6 },
+    mobileCollage: { left: 54, top: 38.6, width: 43, zIndex: 7 },
+  },
+  nepal: {
+    label: 'Nepal',
+    cover: 'copy_288C6509-9ED1-40B1-AB73-52A07E24EAEF.mp4',
+    collage: { left: 53, top: 39.5, width: 33, zIndex: 7 },
+    mobileCollage: { left: 16, top: 46.2, width: 68, zIndex: 8 },
   },
   istanbul: {
     label: 'Istanbul',
     cover: 'DSCF9147.JPG',
-    collage: { left: 32.5, top: 35.5, width: 35, zIndex: 6 },
-    mobileCollage: { left: 19, top: 49.5, width: 70, zIndex: 8 },
+    collage: { left: 14, top: 49, width: 32.5, zIndex: 5 },
+    mobileCollage: { left: 36, top: 56.8, width: 61, zIndex: 7 },
   },
   'landrover-roadtrip-frankreich': {
     label: 'France — Roadtrip',
     cover: '_DSF8081.jpg',
-    collage: { left: 48, top: 50, width: 19.5, zIndex: 7 },
-    mobileCollage: { left: 3.5, top: 65.5, width: 47, zIndex: 6 },
+    collage: { left: 44, top: 51.5, width: 20.5, zIndex: 6 },
+    mobileCollage: { left: 49, top: 65.4, width: 44.5, zIndex: 5 },
+  },
+  kambodscha: {
+    label: 'Cambodia',
+    cover: 'IMG_8004.jpeg',
+    collage: { left: 4, top: 67, width: 30, zIndex: 4 },
+    mobileCollage: { left: 2.5, top: 68.5, width: 56.5, zIndex: 6 },
+  },
+  jordanien: {
+    label: 'Jordan',
+    cover: '6CC5F030-651C-4CD4-9473-7C6399B4878E.mp4',
+    collage: { left: 71.5, top: 53.5, width: 21, zIndex: 4 },
+    mobileCollage: { left: 50, top: 75.8, width: 45, zIndex: 7 },
+  },
+  'indien-railway': {
+    label: 'India — Railway',
+    cover: 'IMG_3783.jpg',
+    collage: { left: 29.5, top: 73.5, width: 21.5, zIndex: 7 },
+    mobileCollage: { left: 5.5, top: 78.2, width: 46.5, zIndex: 5 },
+  },
+  'tokyo-shinjuku': {
+    label: 'Tokyo — Shinjuku',
+    cover: 'copy_A21D3ACA-0E38-4DCF-BC7D-0381CE3B8EA5.mp4',
+    collage: { left: 56.5, top: 69, width: 18, zIndex: 5 },
+    mobileCollage: { left: 56, top: 86.2, width: 40.5, zIndex: 4 },
   },
   'ente-trabi-sonnenuntergang': {
     label: '2CV & Trabant — Sunset',
     cover: '_DSF5941-Bearbeitet.jpg',
-    collage: { left: 65, top: 41.5, width: 21, zIndex: 6 },
-    mobileCollage: { left: 47.5, top: 61.5, width: 49, zIndex: 7 },
+    collage: { left: 71, top: 76.5, width: 22, zIndex: 6 },
+    mobileCollage: { left: 11, top: 87.6, width: 47, zIndex: 6 },
   },
 };
 
 const FALLBACK_COLLAGE_SLOTS = [
-  { left: 7.5, top: 9, width: 28, zIndex: 2 },
-  { left: 29, top: 3, width: 19, zIndex: 4 },
-  { left: 44.5, top: 6.5, width: 31.5, zIndex: 3 },
-  { left: 71.5, top: 4.5, width: 21, zIndex: 5 },
-  { left: 8.5, top: 37.5, width: 29.5, zIndex: 5 },
-  { left: 32.5, top: 35.5, width: 35, zIndex: 6 },
-  { left: 48, top: 50, width: 19.5, zIndex: 7 },
-  { left: 65, top: 41.5, width: 21, zIndex: 6 },
+  { left: 3.5, top: 2, width: 27.5, zIndex: 2 },
+  { left: 28, top: 0.5, width: 19, zIndex: 4 },
+  { left: 52, top: 3.5, width: 28.5, zIndex: 3 },
+  { left: 77.5, top: 1.2, width: 18.5, zIndex: 5 },
+  { left: 9, top: 16.5, width: 26.5, zIndex: 6 },
+  { left: 42, top: 14.5, width: 20.5, zIndex: 5 },
 ];
 
 const FALLBACK_MOBILE_COLLAGE_SLOTS = [
-  { left: 5, top: 2, width: 56, zIndex: 2 },
-  { left: 52.5, top: 0.5, width: 44, zIndex: 4 },
-  { left: 1.5, top: 17.5, width: 62, zIndex: 5 },
-  { left: 55, top: 27.5, width: 43, zIndex: 6 },
-  { left: 5.5, top: 34.5, width: 58, zIndex: 7 },
-  { left: 19, top: 49.5, width: 70, zIndex: 8 },
-  { left: 3.5, top: 65.5, width: 47, zIndex: 6 },
-  { left: 47.5, top: 61.5, width: 49, zIndex: 7 },
+  { left: 3, top: 0.8, width: 56, zIndex: 2 },
+  { left: 52.5, top: 0.4, width: 44, zIndex: 4 },
+  { left: 12, top: 7.4, width: 62, zIndex: 5 },
+  { left: 55.5, top: 14.5, width: 41.5, zIndex: 6 },
+  { left: 3.5, top: 19.2, width: 55, zIndex: 7 },
+  { left: 44, top: 25.6, width: 46.5, zIndex: 5 },
 ];
 
 // Pre-generated poster frames for instant display on iOS Safari (even in Low Power Mode)
 const VIDEO_POSTERS = {
   'timon-editorial': '/media/poster-timon-editorial.jpg',
   'dbb-double-header': '/media/poster-dbb-double-header.jpg',
+  '1AE51C11-EAB2-4444-9140-345096CB874D.mp4': '/media/poster-jordanien-1.jpg',
+  '6CC5F030-651C-4CD4-9473-7C6399B4878E.mp4': '/media/poster-jordanien-2.jpg',
+  'copy_288C6509-9ED1-40B1-AB73-52A07E24EAEF.mp4': '/media/poster-nepal-1.jpg',
+  'copy_F7480DD1-F7DD-49F1-A43F-1E87C96428B0.mp4': '/media/poster-nepal-2.jpg',
+  'AE2E947B-066A-427F-B037-FD9B7F0F38B9.mp4': '/media/poster-tokyo-japan-1.jpg',
+  'copy_CF70AD6E-A641-4D01-B4C2-FC14D704049F.mp4': '/media/poster-tokyo-japan-2.jpg',
+  'copy_A21D3ACA-0E38-4DCF-BC7D-0381CE3B8EA5.mp4': '/media/poster-tokyo-shinjuku.jpg',
+  'copy_3B1ACCDE-A781-4F23-B82E-C15A9559FAAC.mp4': '/media/poster-vietnam.jpg',
+  'IMG_2407.mp4': '/media/poster-indien-street.jpg',
 };
 
 function toSlug(text, fallbackIndex = 0) {
@@ -225,13 +298,36 @@ function formatCategoryLabel(rawName) {
 }
 
 /**
- * Pure Node.js dimension reader for JPEG and PNG files (zero external dependencies,
+ * Pure Node.js dimension reader for JPEG, PNG, and MP4/MOV files (zero external dependencies,
  * works identically on macOS and Cloudflare Pages Linux builds).
  */
 function getMediaDimensions(filePath, ext) {
   try {
     if (VIDEO_EXTENSIONS.has(ext)) {
-      return { width: 1080, height: 1350 };
+      const findTkhdDims = (data) => {
+        let idx = 0;
+        while (idx < data.length - 100) {
+          const pos = data.indexOf('tkhd', idx, 'ascii');
+          if (pos === -1) break;
+          const version = data[pos + 4];
+          const off = version === 1 ? pos + 92 : pos + 80;
+          if (off + 8 <= data.length) {
+            const width = data.readUInt32BE(off) >>> 16;
+            const height = data.readUInt32BE(off + 4) >>> 16;
+            if (width > 0 && height > 0 && width <= 8192 && height <= 8192) {
+              return { width, height };
+            }
+          }
+          idx = pos + 4;
+        }
+        return null;
+      };
+      const fd = fs.openSync(filePath, 'r');
+      const head = Buffer.alloc(256 * 1024);
+      const bytesRead = fs.readSync(fd, head, 0, head.length, 0);
+      fs.closeSync(fd);
+      const dims = findTkhdDims(head.subarray(0, bytesRead)) || findTkhdDims(fs.readFileSync(filePath));
+      return dims || { width: 1080, height: 1350 };
     }
 
     const fd = fs.openSync(filePath, 'r');
@@ -575,7 +671,7 @@ export function loadMedienProjects() {
     categoriesMap.get(mapKey).items.push({
       src: publicUrl,
       type: isVideo ? 'video' : 'image',
-      poster: isVideo ? VIDEO_POSTERS[folderKey] : undefined,
+      poster: isVideo ? (VIDEO_POSTERS[file.fileName] || VIDEO_POSTERS[folderKey]) : undefined,
       width,
       height,
       intrinsicAspect: `${width} / ${height}`,
@@ -656,7 +752,9 @@ export function loadMedienProjects() {
       id: `ex-${String(idx + 1).padStart(2, '0')}`,
       slug: project.slug,
       title: project.label,
+      type: project.type,
       src: project.src,
+      poster: project.poster,
       width: project.width,
       height: project.height,
       aspect: project.intrinsicAspect || '3 / 4',

@@ -1,9 +1,47 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import LegalModal from './LegalModal.jsx';
 
+function renderMedia(item, isEager) {
+  if (item.type === 'video') {
+    return (
+      <video
+        src={item.src}
+        poster={item.poster}
+        width={item.width}
+        height={item.height}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        onLoadedMetadata={(e) => {
+          e.currentTarget.muted = true;
+          e.currentTarget.defaultMuted = true;
+          e.currentTarget.play().catch(() => {});
+        }}
+        className="block w-full h-auto object-cover pointer-events-none"
+      />
+    );
+  }
+
+  return (
+    <img
+      src={item.src}
+      alt={item.title}
+      width={item.width}
+      height={item.height}
+      loading={isEager ? 'eager' : 'lazy'}
+      decoding="async"
+      draggable={false}
+      className="block w-full h-auto object-cover"
+    />
+  );
+}
+
 export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [] }) {
   const [activeLegal, setActiveLegal] = useState(null);
+  const overlayRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -23,10 +61,50 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
     };
   }, [isOpen, onClose, activeLegal]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const container = overlayRef.current;
+    if (!container) return;
+
+    const videos = Array.from(container.querySelectorAll('video'));
+    if (videos.length === 0) return;
+
+    const playVideo = (vid) => {
+      vid.muted = true;
+      vid.defaultMuted = true;
+      vid.playsInline = true;
+      vid.play().catch(() => {});
+    };
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            playVideo(entry.target);
+          } else {
+            entry.target.pause();
+          }
+        });
+      },
+      { root: container, rootMargin: '250px 0px' }
+    );
+
+    videos.forEach((vid) => {
+      playVideo(vid);
+      io.observe(vid);
+    });
+
+    return () => {
+      io.disconnect();
+      videos.forEach((vid) => vid.pause());
+    };
+  }, [isOpen, items]);
+
   if (!isOpen) return null;
 
   return (
     <motion.div
+      ref={overlayRef}
       role="dialog"
       aria-modal="true"
       aria-label="Exhibition"
@@ -58,16 +136,16 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
         </button>
       </div>
 
-      {/* Overlapping Photo Cluster (Zero Captions, Direct Project Links) */}
-      <div className="flex-1 w-full flex items-start md:items-center justify-center px-3 sm:px-8 lg:px-10 py-5 sm:py-10">
-        {/* Desktop / Tablet Collage Canvas */}
-        <div className="hidden md:block relative w-full max-w-[1200px] aspect-[1200/740]">
+      {/* Continuous Irregular Overlapping Collage (Zero Captions, Direct Project Links) */}
+      <div className="flex-1 w-full flex justify-center px-3 sm:px-8 lg:px-10 py-6 sm:py-10 lg:py-14">
+        {/* Desktop / Tablet Continuous Collage Canvas */}
+        <div className="hidden md:block relative w-full max-w-[1220px] aspect-[1220/1920]">
           {items.map((item, idx) => {
             const slot = item.collage || {
-              left: (idx % 4) * 22 + 6,
-              top: Math.floor(idx / 4) * 44 + 6,
+              left: (idx % 4) * 23 + 3,
+              top: Math.floor(idx / 4) * 20 + 2,
               width: 22,
-              zIndex: idx + 2,
+              zIndex: (idx % 6) + 2,
             };
 
             return (
@@ -83,29 +161,20 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
                 }}
                 className="group absolute block overflow-hidden bg-ink-tint hover:!z-30 focus-visible:!z-30 transition-transform duration-200 ease-out hover:scale-[1.018] cursor-pointer"
               >
-                <img
-                  src={item.src}
-                  alt={item.title}
-                  width={item.width}
-                  height={item.height}
-                  loading="eager"
-                  decoding="async"
-                  draggable={false}
-                  className="block w-full h-auto object-cover"
-                />
+                {renderMedia(item, idx < 7)}
               </a>
             );
           })}
         </div>
 
-        {/* Mobile Overlapping Collage Canvas */}
-        <div className="md:hidden relative w-full max-w-[440px] aspect-[390/860]">
+        {/* Mobile Continuous Collage Canvas */}
+        <div className="md:hidden relative w-full max-w-[440px] aspect-[390/2240]">
           {items.map((item, idx) => {
             const slot = item.mobileCollage || {
               left: idx % 2 === 0 ? 3 : 48,
-              top: Math.floor(idx / 2) * 23 + 2,
-              width: 50,
-              zIndex: idx + 2,
+              top: idx * 5.6 + 1,
+              width: 48,
+              zIndex: (idx % 6) + 2,
             };
 
             return (
@@ -121,16 +190,7 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
                 }}
                 className="absolute block overflow-hidden bg-ink-tint transition-transform duration-150 ease-out active:scale-[0.985] active:!z-30 focus-visible:!z-30 cursor-pointer"
               >
-                <img
-                  src={item.src}
-                  alt={item.title}
-                  width={item.width}
-                  height={item.height}
-                  loading={idx < 4 ? 'eager' : 'lazy'}
-                  decoding="async"
-                  draggable={false}
-                  className="block w-full h-auto object-cover"
-                />
+                {renderMedia(item, idx < 6)}
               </a>
             );
           })}
