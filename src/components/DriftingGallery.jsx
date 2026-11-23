@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { isVideoPath, toProjectSlug } from '../data/projects.js';
 
 function getNextScrollState() {
-  const sections = Array.from(document.querySelectorAll('[data-gallery-section]')).slice(1);
+  const sections = Array.from(document.querySelectorAll('[data-gallery-section]'));
   const footer = document.getElementById('contact-footer');
 
   const currentY = window.scrollY;
@@ -498,17 +498,7 @@ export default function DriftingGallery({ identity, rows = [] }) {
   };
 
   return (
-    <div id="top" className="relative">
-      {/* Left-aligned Swiss Neo-Grotesque Masthead positioned close above the first gallery strip */}
-      <div className="mt-8 sm:mt-20 lg:mt-28 px-6 sm:px-8 lg:px-10">
-        <h1 className="font-display font-medium uppercase text-4xl sm:text-7xl lg:text-[5rem] xl:text-[5.75rem] leading-[1.0] tracking-[-0.015em] text-ink">
-          {identity.monogram}
-        </h1>
-        <p className="mt-2.5 sm:mt-3 font-sans font-normal text-sm sm:text-[0.95rem] tracking-[0.12px] text-ink-muted">
-          {identity.subtitle}
-        </p>
-      </div>
-
+    <div className="relative">
       {/* Continuous Drifting & Draggable Horizontal Gallery Strips */}
       <div className="pb-6">
         {rows.map((row, idx) => (

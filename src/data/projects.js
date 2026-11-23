@@ -23,6 +23,8 @@ export const siteIdentity = {
   name: 'Samir Feikert',
   monogram: 'SAMIR FEIKERT',
   subtitle: 'Ausgebildeter Fotograf aus Düsseldorf',
+  heroIntro:
+    'Ausgebildeter Fotograf aus Düsseldorf mit Fokus auf authentische Bilder — ehrlich, analog inspiriert und auf das Wesentliche reduziert.',
   email: 'contact.samirfeikert@gmail.com',
   phone: '+49 176 31501119',
   instagram: {
