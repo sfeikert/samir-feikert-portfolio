@@ -70,21 +70,22 @@ const MAX_SLIDES_PER_ROW = 4;
 
 // Curated order, clean labels, and cover selections for Medien/startseite/
 const STARTSEITE_ORDER = [
-  'samuel-brillenfotos-beyeler',
+  'allinabasement',
+  'porsche-avia-nacht',
   'timon-editorial',
   'mercedes-avia',
-  'vitra-architektur',
+  'basketball-portraits',
+  'samuel-wenkenpark',
+  'heizr-alles',
+  'samuel-brillenfotos-beyeler',
   'dbb-double-header',
   'hannah',
   'jamelia-shooting',
   'shooting-hannes',
   'passione-engadina-22',
-  'allinabasement',
+  'vitra-architektur',
   'samuel-ausfahrt-stetten',
   'hannes-vitra-nacht',
-  'basketball-portraits',
-  'heizr-alles',
-  'samuel-wenkenpark',
   'landrover-tuellinger',
   'porsche-rooling-shots',
   'michael',
@@ -92,6 +93,10 @@ const STARTSEITE_ORDER = [
 ];
 
 const STARTSEITE_META = {
+  'porsche-avia-nacht': {
+    label: 'Porsche — Avia Nacht',
+    cover: 'IMG_8682.jpeg',
+  },
   'samuel-brillenfotos-beyeler': {
     label: 'Samuel — Beyeler',
     cover: 'samuel-Brille-Beyeler00001.jpg',
@@ -146,11 +151,11 @@ const STARTSEITE_META = {
   },
   'heizr-alles': {
     label: 'Heizr',
-    cover: '_DSF6976.jpg',
+    cover: '_DSF6982.jpg',
   },
   'samuel-wenkenpark': {
     label: 'Samuel — Wenkenpark',
-    cover: '_DSF6872.jpg',
+    cover: 'id edit.jpg',
   },
   'landrover-tuellinger': {
     label: 'Defender — Tüllinger',
