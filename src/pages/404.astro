@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const pillClass =
+  'inline-flex items-center justify-center gap-1.5 min-h-[36px] sm:min-h-[34px] px-3.5 sm:px-4 py-1.5 font-sans font-normal text-[12px] sm:text-[13px] leading-none tracking-[0.01em] text-ink bg-white hover:bg-ink hover:text-white active:opacity-80 border border-ink/15 hover:border-ink rounded-full transition-colors duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)]';
+---
+
+<BaseLayout
+  title="404 — Samir Feikert"
+  description="Seite nicht gefunden — Samir Feikert."
+  noindex={true}
+>
+  <div class="min-h-screen w-full bg-white text-ink flex flex-col justify-between">
+    <header class="w-full max-w-3xl mx-auto px-6 sm:px-10 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4 flex items-center justify-between gap-4 border-b border-ink/10">
+      <a href="/" class={pillClass}>
+        ← Übersicht
+      </a>
+      <a
+        href="/"
+        aria-label="Zur Startseite"
+        class={`${pillClass} font-display uppercase tracking-[0.04em]`}
+      >
+        SF
+      </a>
+    </header>
+
+    <main id="main-content" class="flex-1 w-full max-w-3xl mx-auto px-6 sm:px-10 py-20 sm:py-28 flex flex-col justify-center">
+      <div class="space-y-6">
+        <p class="font-mono text-xs tracking-[0.04em] text-ink-muted">404</p>
+        <h1 class="font-display font-medium uppercase text-2xl sm:text-3xl tracking-[-0.01em] text-ink">
+          Seite nicht gefunden
+        </h1>
+        <p class="font-sans text-sm leading-relaxed text-ink-muted max-w-md">
+          Die angeforderte Seite existiert nicht oder wurde verschoben.
+        </p>
+        <div class="pt-2">
+          <a href="/" class={pillClass}>
+            ← Zur Startseite
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <footer class="w-full max-w-3xl mx-auto px-6 sm:px-10 py-5 border-t border-ink/10 flex items-center justify-end gap-6 font-sans text-xs tracking-[0.12px] text-ink-muted">
+      <a href="/impressum" class="inline-flex items-center min-h-[44px] hover:text-ink transition-colors">
+        Impressum
+      </a>
+      <a href="/datenschutz" class="inline-flex items-center min-h-[44px] hover:text-ink transition-colors">
+        Datenschutz
+      </a>
+    </footer>
+  </div>
+</BaseLayout>
