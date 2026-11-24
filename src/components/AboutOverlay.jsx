@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
-import LegalModal from './LegalModal.jsx';
+import { aboutContent, siteIdentity } from '../data/projects.js';
 
 function InstagramIcon({ className = 'w-4 h-4' }) {
   return (
@@ -25,10 +24,10 @@ export default function AboutOverlay({
   isOpen,
   onClose,
   identity,
-  content,
+  content = aboutContent,
   initialSection = 'about',
 }) {
-  const [activeLegal, setActiveLegal] = useState(null);
+  const fullIdentity = { ...siteIdentity, ...identity };
   const [inquiryClicked, setInquiryClicked] = useState(false);
   const [copied, setCopied] = useState(false);
   const inquiryRef = useRef(null);
@@ -37,7 +36,6 @@ export default function AboutOverlay({
     if (!isOpen) return;
 
     const handleKeyDown = (e) => {
-      if (activeLegal) return;
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -47,7 +45,7 @@ export default function AboutOverlay({
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [isOpen, onClose, activeLegal]);
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (!isOpen || initialSection !== 'inquiry') return;
@@ -59,37 +57,33 @@ export default function AboutOverlay({
 
   if (!isOpen) return null;
 
-  const subject = `Projektanfrage - ${identity.name}`;
-  const anfrageHref = `mailto:${identity.email}?subject=${encodeURIComponent(subject)}`;
+  const subject = `Projektanfrage - ${fullIdentity.name}`;
+  const anfrageHref = `mailto:${fullIdentity.email}?subject=${encodeURIComponent(subject)}`;
   const gmailHref = `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(
-    identity.email
+    fullIdentity.email
   )}&su=${encodeURIComponent(subject)}`;
 
   const handleAnfrageClick = () => {
     setInquiryClicked(true);
     if (navigator.clipboard?.writeText) {
       navigator.clipboard
-        .writeText(identity.email)
+        .writeText(fullIdentity.email)
         .then(() => setCopied(true))
         .catch(() => {});
     }
   };
 
-  const instagram = identity.instagram || {
+  const instagram = fullIdentity.instagram || {
     handle: '@samirfeikert',
     url: 'https://www.instagram.com/samirfeikert/',
   };
 
   return (
-    <motion.div
+    <div
       role="dialog"
       aria-modal="true"
       aria-label="About & Anfrage — Samir Feikert"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed inset-0 z-50 bg-white text-ink overflow-y-auto"
+      className="fixed inset-0 z-50 bg-white text-ink overflow-y-auto sf-fade-in"
     >
       {/* Top Header */}
       <div className="sticky top-0 z-10 w-full px-6 sm:px-8 lg:px-10 pt-[max(1rem,env(safe-area-inset-top))] pb-4 bg-white/95 backdrop-blur-sm flex items-center justify-between border-b border-ink/10">
@@ -98,7 +92,7 @@ export default function AboutOverlay({
             About & Anfrage
           </span>
           <span className="hidden sm:inline font-sans text-xs text-ink-muted tracking-[0.12px]">
-            — {identity.subtitle}
+            — {fullIdentity.subtitle}
           </span>
         </div>
         <button
@@ -161,7 +155,7 @@ export default function AboutOverlay({
 
             {inquiryClicked && (
               <p className="font-sans text-xs text-ink-muted tracking-[0.12px]">
-                {copied ? `${identity.email} kopiert — ` : 'Kein Mail-Programm geöffnet? '}
+                {copied ? `${fullIdentity.email} kopiert — ` : 'Kein Mail-Programm geöffnet? '}
                 <a
                   href={gmailHref}
                   target="_blank"
@@ -183,17 +177,17 @@ export default function AboutOverlay({
             </h3>
             <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-6">
               <a
-                href={`mailto:${identity.email}`}
+                href={`mailto:${fullIdentity.email}`}
                 className="inline-flex items-center min-h-[44px] text-ink-muted hover:text-ink transition-colors underline underline-offset-4"
               >
-                {identity.email}
+                {fullIdentity.email}
               </a>
               <span className="hidden sm:inline text-ink/20">/</span>
               <a
-                href={`tel:${identity.phone}`}
+                href={`tel:${fullIdentity.phone}`}
                 className="inline-flex items-center min-h-[44px] text-ink-muted hover:text-ink transition-colors underline underline-offset-4"
               >
-                {identity.phone}
+                {fullIdentity.phone}
               </a>
               <span className="hidden sm:inline text-ink/20">/</span>
               <a
@@ -212,28 +206,20 @@ export default function AboutOverlay({
 
         {/* 4. Subtle Legal Links */}
         <div className="pt-14 pb-4 border-t border-ink/10 flex items-center justify-end gap-6 font-sans text-xs text-ink-muted/70 tracking-[0.12px]">
-          <button
-            type="button"
-            onClick={() => setActiveLegal('imprint')}
-            className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
+          <a
+            href="/impressum"
+            className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors"
           >
-            Imprint
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveLegal('privacy')}
-            className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
+            Impressum
+          </a>
+          <a
+            href="/datenschutz"
+            className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors"
           >
-            Privacy Policy
-          </button>
+            Datenschutz
+          </a>
         </div>
       </div>
-
-      <LegalModal
-        activeLegal={activeLegal}
-        onClose={() => setActiveLegal(null)}
-        identity={identity}
-      />
-    </motion.div>
+    </div>
   );
 }

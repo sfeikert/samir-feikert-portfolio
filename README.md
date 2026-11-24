@@ -9,9 +9,9 @@ Designed with a editorial layout, infinite draggable horizontal image bands, and
 ## Tech Stack
 
 - **Framework:** [Astro](https://astro.build/) (Static Site Generation, zero runtime JS overhead where possible)
-- **UI & Animations:** React + [Framer Motion](https://www.framer.com/motion/)
+- **UI & Animations:** React + lightweight CSS animations
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **Typography:** Swiss Neo-Grotesque metric twins (*Albert Sans* & *Inter*, matching *Untitled Sans* & *Univers*)
+- **Typography:** Self-hosted Swiss Neo-Grotesque fonts (*Albert Sans*, *Inter*, and *Roboto Mono*)
 - **Language:** Pure JavaScript (`.js`, `.jsx`, `.astro`, `.mjs`)
 
 ---
@@ -56,4 +56,6 @@ npm run build
 
 ## License
 
-Private portfolio codebase. Photography and visual content © Samir Feikert.
+All Rights Reserved.
+
+Private portfolio codebase. All photographs, videos, and visual assets in `Medien/` and `public/media/` are © Samir Feikert and may not be copied, redistributed, modified, or reused without prior written permission.

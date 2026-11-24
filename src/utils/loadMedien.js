@@ -1,6 +1,52 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { galleryRows, getAllProjects, toProjectSlug } from '../data/projects.js';
+
+export const THUMB_TARGET_WIDTHS = [600, 1000];
+
+export function getThumbHash(publicUrl) {
+  return crypto.createHash('sha1').update(publicUrl).digest('hex').slice(0, 10);
+}
+
+export function getThumbWidths(naturalWidth) {
+  const w = Number(naturalWidth) || 1000;
+  const set = new Set(THUMB_TARGET_WIDTHS.map((target) => Math.min(target, w)));
+  return Array.from(set).sort((a, b) => a - b);
+}
+
+function resolveCoverThumbMeta(publicUrl, naturalWidth, publicMedienDir) {
+  const hash = getThumbHash(publicUrl);
+  const widths = getThumbWidths(naturalWidth);
+  const thumbsDir = path.join(publicMedienDir, '_thumbs');
+  const entries = [];
+
+  for (const w of widths) {
+    const fileName = `${hash}-${w}.webp`;
+    if (fs.existsSync(path.join(thumbsDir, fileName))) {
+      entries.push({ w, url: `/medien/_thumbs/${fileName}` });
+    }
+  }
+
+  if (entries.length === 0) {
+    return { thumbSrc: undefined, thumbSrcSet: undefined };
+  }
+
+  return {
+    thumbSrc: entries[entries.length - 1].url,
+    thumbSrcSet: entries.map((e) => `${e.url} ${e.w}w`).join(', '),
+  };
+}
+
+function resolvePosterWebp(posterUrl, publicMedienDir) {
+  if (!posterUrl) return undefined;
+  const hash = getThumbHash(posterUrl);
+  const fileName = `poster-${hash}-600.webp`;
+  if (fs.existsSync(path.join(publicMedienDir, '_thumbs', fileName))) {
+    return `/medien/_thumbs/${fileName}`;
+  }
+  return undefined;
+}
 
 const MEDIA_EXTENSIONS = new Set([
   '.jpg',
@@ -611,6 +657,7 @@ export function loadMedienProjects() {
   const cleanStaleFiles = (dir, relPrefix = '') => {
     if (!fs.existsSync(dir)) return;
     for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (!relPrefix && item.name === '_thumbs') continue;
       const itemRel = relPrefix ? path.join(relPrefix, item.name) : item.name;
       const itemAbs = path.join(dir, item.name);
       if (item.isDirectory()) {
@@ -696,12 +743,22 @@ export function loadMedienProjects() {
     seenSlugs.add(slug);
 
     const cover = sortedItems[0];
+    const thumbMeta =
+      cover.type === 'image'
+        ? resolveCoverThumbMeta(cover.src, cover.width, publicMedienDir)
+        : { thumbSrc: undefined, thumbSrcSet: undefined };
+    const posterWebp =
+      cover.type === 'video' ? resolvePosterWebp(cover.poster, publicMedienDir) : undefined;
+
     const project = {
       slug,
       folderKey: cat.folderKey,
       type: cover.type,
       src: cover.src,
+      thumbSrc: thumbMeta.thumbSrc,
+      thumbSrcSet: thumbMeta.thumbSrcSet,
       poster: cover.poster,
+      posterWebp,
       width: cover.width,
       height: cover.height,
       intrinsicAspect: cover.intrinsicAspect,
@@ -754,7 +811,10 @@ export function loadMedienProjects() {
       title: project.label,
       type: project.type,
       src: project.src,
+      thumbSrc: project.thumbSrc,
+      thumbSrcSet: project.thumbSrcSet,
       poster: project.poster,
+      posterWebp: project.posterWebp,
       width: project.width,
       height: project.height,
       aspect: project.intrinsicAspect || '3 / 4',

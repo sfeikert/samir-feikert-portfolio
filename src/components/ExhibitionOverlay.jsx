@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
-import LegalModal from './LegalModal.jsx';
+import { useEffect, useRef } from 'react';
+import { exhibitionItems as defaultExhibitionItems } from '../data/projects.js';
 
 function renderMedia(item, isEager) {
   if (item.type === 'video') {
     return (
       <video
         src={item.src}
-        poster={item.poster}
+        poster={item.posterWebp || item.poster}
         width={item.width}
         height={item.height}
         autoPlay
@@ -21,13 +20,17 @@ function renderMedia(item, isEager) {
           e.currentTarget.play().catch(() => {});
         }}
         className="block w-full h-auto object-cover pointer-events-none"
-      />
+      >
+        <track kind="captions" src="/media/silent.vtt" srcLang="de" label="Ohne Ton" default />
+      </video>
     );
   }
 
   return (
     <img
-      src={item.src}
+      src={item.thumbSrc || item.src}
+      srcSet={item.thumbSrcSet}
+      sizes={item.thumbSrcSet ? '(min-width: 768px) 30vw, 62vw' : undefined}
       alt={item.title}
       width={item.width}
       height={item.height}
@@ -39,15 +42,14 @@ function renderMedia(item, isEager) {
   );
 }
 
-export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [] }) {
-  const [activeLegal, setActiveLegal] = useState(null);
+export default function ExhibitionOverlay({ isOpen, onClose, items }) {
+  const activeItems = items?.length ? items : defaultExhibitionItems;
   const overlayRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e) => {
-      if (activeLegal) return;
       if (e.key === 'Escape') {
         onClose();
       }
@@ -59,7 +61,7 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [isOpen, onClose, activeLegal]);
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -98,21 +100,17 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
       io.disconnect();
       videos.forEach((vid) => vid.pause());
     };
-  }, [isOpen, items]);
+  }, [isOpen, activeItems]);
 
   if (!isOpen) return null;
 
   return (
-    <motion.div
+    <div
       ref={overlayRef}
       role="dialog"
       aria-modal="true"
       aria-label="Exhibition"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed inset-0 z-50 bg-white text-ink overflow-y-auto flex flex-col justify-between"
+      className="fixed inset-0 z-50 bg-white text-ink overflow-y-auto flex flex-col justify-between sf-fade-in"
     >
       {/* Sticky Top Bar */}
       <div className="sticky top-0 z-40 w-full px-6 sm:px-8 lg:px-10 pt-[max(1rem,env(safe-area-inset-top))] pb-3 bg-white/95 backdrop-blur-sm flex items-center justify-between border-b border-ink/10 shrink-0">
@@ -140,7 +138,7 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
       <div className="flex-1 w-full flex justify-center px-3 sm:px-8 lg:px-10 py-6 sm:py-10 lg:py-14">
         {/* Desktop / Tablet Continuous Collage Canvas */}
         <div className="hidden md:block relative w-full max-w-[1220px] aspect-[1220/1920]">
-          {items.map((item, idx) => {
+          {activeItems.map((item, idx) => {
             const slot = item.collage || {
               left: (idx % 4) * 23 + 3,
               top: Math.floor(idx / 4) * 20 + 2,
@@ -169,7 +167,7 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
 
         {/* Mobile Continuous Collage Canvas */}
         <div className="md:hidden relative w-full max-w-[440px] aspect-[390/2240]">
-          {items.map((item, idx) => {
+          {activeItems.map((item, idx) => {
             const slot = item.mobileCollage || {
               left: idx % 2 === 0 ? 3 : 48,
               top: idx * 5.6 + 1,
@@ -199,27 +197,19 @@ export default function ExhibitionOverlay({ isOpen, onClose, identity, items = [
 
       {/* Subtle Legal Links */}
       <div className="w-full px-6 sm:px-8 lg:px-10 py-4 border-t border-ink/10 flex items-center justify-end gap-6 font-sans text-xs text-ink-muted/70 tracking-[0.12px] shrink-0">
-        <button
-          type="button"
-          onClick={() => setActiveLegal('imprint')}
-          className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
+        <a
+          href="/impressum"
+          className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors"
         >
-          Imprint
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveLegal('privacy')}
-          className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors cursor-pointer"
+          Impressum
+        </a>
+        <a
+          href="/datenschutz"
+          className="inline-flex items-center min-h-[44px] hover:text-ink active:opacity-70 transition-colors"
         >
-          Privacy Policy
-        </button>
+          Datenschutz
+        </a>
       </div>
-
-      <LegalModal
-        activeLegal={activeLegal}
-        onClose={() => setActiveLegal(null)}
-        identity={identity}
-      />
-    </motion.div>
+    </div>
   );
 }

@@ -11,12 +11,49 @@ const activeRows = medienData?.rows?.length ? medienData.rows : galleryRows;
 const activeExhibitionItems = medienData?.exhibitionItems?.length
   ? medienData.exhibitionItems
   : defaultExhibitionItems;
+
+// Strip per-project `images[]` arrays from homepage island props (keeps index.html slim)
+const homeRows = activeRows.map((row) => ({
+  id: row.id,
+  slides: row.slides.map((slide) => ({
+    slug: slide.slug,
+    type: slide.type,
+    src: slide.src,
+    thumbSrc: slide.thumbSrc,
+    thumbSrcSet: slide.thumbSrcSet,
+    poster: slide.poster,
+    posterWebp: slide.posterWebp,
+    width: slide.width,
+    height: slide.height,
+    intrinsicAspect: slide.intrinsicAspect,
+    label: slide.label,
+    wide: slide.wide,
+    aspect: slide.aspect,
+    startIndex: slide.startIndex,
+  })),
+}));
+
+const firstImageSlide = homeRows[0]?.slides?.find((slide) => slide.type !== 'video');
+const lcpPreload = firstImageSlide
+  ? {
+      href: firstImageSlide.thumbSrc || firstImageSlide.src,
+      srcSet: firstImageSlide.thumbSrcSet,
+      sizes: firstImageSlide.wide
+        ? '(min-width: 1024px) 50vw, (min-width: 640px) 55vw, 94vw'
+        : '(min-width: 1024px) 25vw, (min-width: 640px) 55vw, 80vw',
+    }
+  : null;
+const publicIdentity = {
+  name: siteIdentity.name,
+  subtitle: siteIdentity.subtitle,
+  heroIntro: siteIdentity.heroIntro,
+};
 ---
 
-<BaseLayout title="Samir Feikert — Photographer">
-  <HeaderBar client:load identity={siteIdentity} exhibitionItems={activeExhibitionItems} />
+<BaseLayout title="Samir Feikert — Photographer" preloadImage={lcpPreload}>
+  <HeaderBar client:load identity={publicIdentity} exhibitionItems={activeExhibitionItems} />
   <main id="main-content">
-    <DriftingGallery client:load identity={siteIdentity} rows={activeRows} />
+    <DriftingGallery client:load rows={homeRows} />
   </main>
-  <MinimalFooter client:visible identity={siteIdentity} />
+  <MinimalFooter />
 </BaseLayout>

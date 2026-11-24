@@ -397,7 +397,7 @@ export default function ProjectGalleryView({ identity, project, exhibitionItems 
         </div>
       </section>
 
-      <MinimalFooter identity={identity} showBackLink />
+      <MinimalFooter showBackLink />
     </div>
   );
 }

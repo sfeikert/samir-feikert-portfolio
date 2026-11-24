@@ -22,3 +22,7 @@ __pycache__/
 npm-debug.log*
 .vscode/
 .idea/
+
+# Local AI assistant rules & skills (kept locally, excluded from public repo)
+.agents/
+GEMINI.md

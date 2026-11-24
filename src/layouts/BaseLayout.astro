@@ -4,6 +4,8 @@ import '../styles/global.css';
 const {
   title = 'Samir Feikert — Photographer',
   description = 'Portfolio of Samir Feikert — Trained Photographer based in Düsseldorf.',
+  preloadImage = null,
+  noindex = false,
 } = Astro.props;
 
 const canonicalUrl = new URL(
@@ -13,10 +15,11 @@ const canonicalUrl = new URL(
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="de">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="canonical" href={canonicalUrl} />
     <meta name="description" content={description} />
@@ -31,6 +34,16 @@ const canonicalUrl = new URL(
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    {preloadImage && (
+      <link
+        rel="preload"
+        as="image"
+        href={preloadImage.href}
+        imagesrcset={preloadImage.srcSet}
+        imagesizes={preloadImage.sizes}
+        fetchpriority="high"
+      />
+    )}
   </head>
 
   <body>

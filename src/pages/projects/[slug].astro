@@ -24,12 +24,16 @@ const activeExhibitionItems = medienData?.exhibitionItems?.length
 const pageTitle = project?.label
   ? `${project.label} — ${siteIdentity.name}`
   : `${siteIdentity.name} — Photographer`;
+const publicIdentity = {
+  name: siteIdentity.name,
+  subtitle: siteIdentity.subtitle,
+};
 ---
 
 <BaseLayout title={pageTitle}>
   <ProjectGalleryView
     client:load
-    identity={siteIdentity}
+    identity={publicIdentity}
     project={project}
     exhibitionItems={activeExhibitionItems}
   />

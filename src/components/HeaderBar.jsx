@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import AboutOverlay from './AboutOverlay.jsx';
-import ExhibitionOverlay from './ExhibitionOverlay.jsx';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import SamirWordmark from './SamirWordmark.jsx';
-import { aboutContent, exhibitionItems as defaultExhibitionItems } from '../data/projects.js';
+
+const AboutOverlay = lazy(() => import('./AboutOverlay.jsx'));
+const ExhibitionOverlay = lazy(() => import('./ExhibitionOverlay.jsx'));
 
 const PILL_CLASS =
   'inline-flex items-center justify-center gap-1.5 min-h-[36px] sm:min-h-[34px] px-3.5 sm:px-4 py-1.5 font-sans font-normal text-[12px] sm:text-[13px] leading-none tracking-[0.01em] text-ink bg-white hover:bg-ink hover:text-white active:opacity-80 border border-ink/15 hover:border-ink rounded-full transition-colors duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)]';
@@ -191,80 +190,71 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
       )}
 
       {/* Mobile Fullscreen Menu (Project Detail Pages on narrow screens) */}
-      <AnimatePresence>
-        {showBackLink && mobileDrawerOpen && (
-          <motion.nav
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.22 }}
-            aria-label="Mobile navigation"
-            className="fixed inset-0 top-16 z-40 bg-white px-6 py-10 sm:hidden flex flex-col gap-5 font-display font-normal uppercase text-3xl tracking-[0em] text-ink"
+      {showBackLink && mobileDrawerOpen && (
+        <nav
+          aria-label="Mobile navigation"
+          className="fixed inset-0 top-16 z-40 bg-white px-6 py-10 sm:hidden flex flex-col gap-5 font-display font-normal uppercase text-3xl tracking-[0em] text-ink sf-fade-in"
+        >
+          <a
+            href="/"
+            onClick={() => setMobileDrawerOpen(false)}
+            className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
           >
-            <a
-              href="/"
-              onClick={() => setMobileDrawerOpen(false)}
-              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-            >
-              Overview
-            </a>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveOverlay('about');
-                setMobileDrawerOpen(false);
-              }}
-              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-            >
-              About
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveOverlay('exhibition');
-                setMobileDrawerOpen(false);
-              }}
-              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-            >
-              Exhibition
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveOverlay('inquiry');
-                setMobileDrawerOpen(false);
-              }}
-              className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
-            >
-              Anfrage
-            </button>
-          </motion.nav>
-        )}
-      </AnimatePresence>
+            Overview
+          </a>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveOverlay('about');
+              setMobileDrawerOpen(false);
+            }}
+            className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
+          >
+            About
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveOverlay('exhibition');
+              setMobileDrawerOpen(false);
+            }}
+            className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
+          >
+            Exhibition
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveOverlay('inquiry');
+              setMobileDrawerOpen(false);
+            }}
+            className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
+          >
+            Anfrage
+          </button>
+        </nav>
+      )}
 
-      {/* About & Exhibition Fullscreen Overlays */}
-      <AnimatePresence>
+      {/* Lazy-Loaded About & Exhibition Fullscreen Overlays */}
+      <Suspense fallback={null}>
         {(activeOverlay === 'about' || activeOverlay === 'inquiry') && (
           <AboutOverlay
             isOpen={true}
             initialSection={activeOverlay}
             onClose={() => setActiveOverlay(null)}
             identity={identity}
-            content={aboutContent}
           />
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
         {activeOverlay === 'exhibition' && (
           <ExhibitionOverlay
             isOpen={true}
             onClose={() => setActiveOverlay(null)}
             identity={identity}
-            items={exhibitionItems?.length ? exhibitionItems : defaultExhibitionItems}
+            items={exhibitionItems}
           />
         )}
-      </AnimatePresence>
+      </Suspense>
 
       {/* Discreet Floating Scroll Controls on Start Page (fade in only after scrolling past hero) */}
       {!showBackLink && (

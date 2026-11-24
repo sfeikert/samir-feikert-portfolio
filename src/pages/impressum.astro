@@ -1,0 +1,123 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { siteIdentity } from '../data/projects.js';
+
+const pillClass =
+  'inline-flex items-center justify-center gap-1.5 min-h-[36px] sm:min-h-[34px] px-3.5 sm:px-4 py-1.5 font-sans font-normal text-[12px] sm:text-[13px] leading-none tracking-[0.01em] text-ink bg-white hover:bg-ink hover:text-white active:opacity-80 border border-ink/15 hover:border-ink rounded-full transition-colors duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)]';
+
+const street = siteIdentity.address?.street || 'Ruhrtalstraße 16';
+const city = siteIdentity.address?.city || '40233 Düsseldorf';
+const country = siteIdentity.address?.country || 'Deutschland';
+const phone = siteIdentity.phone || '+49 176 31501119';
+---
+
+<BaseLayout
+  title="Impressum — Samir Feikert"
+  description="Impressum gemäß § 5 DDG — Samir Feikert, Fotograf aus Düsseldorf."
+  noindex={true}
+>
+  <div class="min-h-screen w-full bg-white text-ink flex flex-col justify-between">
+    <header class="w-full max-w-3xl mx-auto px-6 sm:px-10 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4 flex items-center justify-between gap-4 border-b border-ink/10">
+      <a href="/" class={pillClass}>
+        ← Übersicht
+      </a>
+      <a
+        href="/"
+        aria-label="Zur Startseite"
+        class={`${pillClass} font-display uppercase tracking-[0.04em]`}
+      >
+        SF
+      </a>
+    </header>
+
+    <main id="main-content" class="flex-1 w-full max-w-3xl mx-auto px-6 sm:px-10 py-14 sm:py-20">
+      <article class="space-y-8 font-sans text-sm leading-relaxed text-ink-muted">
+        <header class="border-b border-ink/10 pb-5">
+          <h1 class="font-display font-medium uppercase text-xl sm:text-2xl tracking-[-0.01em] text-ink">
+            Impressum (§ 5 DDG)
+          </h1>
+        </header>
+
+        <section class="space-y-1">
+          <h2 class="font-medium text-ink uppercase tracking-wider text-[11px] mb-2">
+            Angaben gemäß § 5 DDG
+          </h2>
+          <p class="font-medium text-ink">{siteIdentity.name}</p>
+          <p>Fotograf</p>
+          <p>{street}</p>
+          <p>{city}</p>
+          <p>{country}</p>
+        </section>
+
+        <section class="space-y-1">
+          <h2 class="font-medium text-ink uppercase tracking-wider text-[11px] mb-2">
+            Kontakt
+          </h2>
+          <p>
+            Telefon:{' '}
+            <a href={`tel:${phone}`} class="text-ink hover:opacity-70 underline underline-offset-4">
+              {phone}
+            </a>
+          </p>
+          <p>
+            E-Mail:{' '}
+            <a
+              href={`mailto:${siteIdentity.email}`}
+              class="text-ink hover:opacity-70 underline underline-offset-4"
+            >
+              {siteIdentity.email}
+            </a>
+          </p>
+        </section>
+
+        <section class="space-y-1">
+          <h2 class="font-medium text-ink uppercase tracking-wider text-[11px] mb-2">
+            Umsatzsteuer
+          </h2>
+          <p>
+            Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).
+          </p>
+        </section>
+
+        <section class="space-y-1">
+          <h2 class="font-medium text-ink uppercase tracking-wider text-[11px] mb-2">
+            Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV
+          </h2>
+          <p>
+            {siteIdentity.name}, {street}, {city}
+          </p>
+        </section>
+
+        <section class="space-y-1">
+          <h2 class="font-medium text-ink uppercase tracking-wider text-[11px] mb-2">
+            Urheberrecht
+          </h2>
+          <p>
+            Die auf dieser Website veröffentlichten Fotografien, Videos und Texte unterliegen dem
+            deutschen Urheberrecht. Jede Art der Vervielfältigung, Bearbeitung, Verbreitung oder
+            sonstigen Verwertung bedarf meiner vorherigen schriftlichen Zustimmung.
+          </p>
+        </section>
+
+        <section class="space-y-1">
+          <h2 class="font-medium text-ink uppercase tracking-wider text-[11px] mb-2">
+            Verbraucherstreitbeilegung (§ 36 VSBG)
+          </h2>
+          <p>
+            Ich bin nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer
+            Verbraucherschlichtungsstelle teilzunehmen.
+          </p>
+        </section>
+      </article>
+    </main>
+
+    <footer class="w-full max-w-3xl mx-auto px-6 sm:px-10 py-5 border-t border-ink/10 flex items-center justify-between gap-6 font-sans text-xs tracking-[0.12px] text-ink-muted">
+      <a href="/" class="inline-flex items-center min-h-[44px] hover:text-ink transition-colors">
+        ← Übersicht
+      </a>
+      <a href="/datenschutz" class="inline-flex items-center min-h-[44px] hover:text-ink transition-colors">
+        Datenschutz
+      </a>
+    </footer>
+  </div>
+</BaseLayout>

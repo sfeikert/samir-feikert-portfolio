@@ -46,8 +46,14 @@ function DriftingRow({ row, rowIndex }) {
 
   const [draggingClass, setDraggingClass] = useState(false);
 
-  // Repeat base slides per cycle (>= 300vw) and render 3 cycles for seamless infinite loop
-  const cycleSlides = [...row.slides, ...row.slides];
+  // Ensure one cycle spans >= 4 slots (>= 100vw desktop / >= 320vw mobile), then render 3 cycles
+  const cycleSlides =
+    row.slides.length >= 4
+      ? row.slides
+      : row.slides.length >= 2
+        ? [...row.slides, ...row.slides]
+        : [...row.slides, ...row.slides, ...row.slides, ...row.slides];
+  const cycleLength = cycleSlides.length;
   const renderedSlides = [...cycleSlides, ...cycleSlides, ...cycleSlides];
 
   useEffect(() => {
@@ -60,6 +66,8 @@ function DriftingRow({ row, rowIndex }) {
     const RESUME_RAMP_MS = 900;
 
     let isVisible = true;
+    let videosArmed = false;
+    const visibleVideos = new Set();
 
     const updateViewportMode = () => {
       const prefersReducedMotion = window.matchMedia(
@@ -93,13 +101,17 @@ function DriftingRow({ row, rowIndex }) {
       applyTransform();
     };
 
-    const initVideos = (shouldPlay) => {
-      const videos = track.querySelectorAll('video');
+    const videos = Array.from(track.querySelectorAll('video'));
+
+    const syncVideos = () => {
       videos.forEach((vid) => {
         vid.muted = true;
         vid.defaultMuted = true;
         vid.playsInline = true;
-        if (shouldPlay) {
+        if (videosArmed && isVisible && visibleVideos.has(vid)) {
+          if (vid.preload === 'none') {
+            vid.preload = 'metadata';
+          }
           vid.play().catch(() => {});
         } else {
           vid.pause();
@@ -109,7 +121,6 @@ function DriftingRow({ row, rowIndex }) {
 
     updateViewportMode();
     measureTrack();
-    initVideos(true);
 
     const resizeObserver = new ResizeObserver(() => {
       updateViewportMode();
@@ -122,12 +133,38 @@ function DriftingRow({ row, rowIndex }) {
       (entries) => {
         entries.forEach((entry) => {
           isVisible = entry.isIntersecting;
-          initVideos(entry.isIntersecting);
+          syncVideos();
         });
       },
-      { rootMargin: '350px 0px' }
+      { rootMargin: '250px 0px' }
     );
     io.observe(viewport);
+
+    // Only play the single cloned video actually visible inside this row's viewport
+    let videoIo = null;
+    let armTimer = null;
+    if (videos.length > 0) {
+      videoIo = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              visibleVideos.add(entry.target);
+            } else {
+              visibleVideos.delete(entry.target);
+            }
+          });
+          syncVideos();
+        },
+        { root: viewport, rootMargin: '120px' }
+      );
+      videos.forEach((vid) => videoIo.observe(vid));
+
+      // Defer video network fetch briefly so the hero LCP image wins bandwidth first
+      armTimer = window.setTimeout(() => {
+        videosArmed = true;
+        syncVideos();
+      }, 350);
+    }
 
     // =========================================================================
     // 1. TOUCH INTERACTION (iOS Safari / Android — non-passive touchmove)
@@ -365,8 +402,10 @@ function DriftingRow({ row, rowIndex }) {
 
     return () => {
       cancelAnimationFrame(rafId);
+      if (armTimer) window.clearTimeout(armTimer);
       resizeObserver.disconnect();
       io.disconnect();
+      if (videoIo) videoIo.disconnect();
       viewport.removeEventListener('touchstart', onTouchStart);
       viewport.removeEventListener('touchmove', onTouchMove);
       viewport.removeEventListener('touchend', onTouchEnd);
@@ -409,18 +448,27 @@ function DriftingRow({ row, rowIndex }) {
                 ? `/projects/${projectSlug}?slide=${slide.startIndex}`
                 : `/projects/${projectSlug}`;
 
-            // Row 1 and Row 2 load eagerly across all cycles so the center cycle (`st.x = -newCycleWidth`)
-            // is immediately visible on iOS Safari without waiting for scroll events.
-            const isEagerRow = rowIndex <= 1;
+            const cycleIndex = Math.floor(idx / cycleLength);
+            const indexInCycle = idx % cycleLength;
+            // Cycle 2 sits at x = 0 after hydration; hide off-screen marquee clones from AT & Tab order
+            const isClone = cycleIndex !== 2;
+
+            const isFirstRow = rowIndex === 0;
+            const isLcpImage = isFirstRow && indexInCycle === 0;
+            const imgSizes = slide.wide
+              ? '(min-width: 1024px) 50vw, (min-width: 640px) 55vw, 94vw'
+              : '(min-width: 1024px) 25vw, (min-width: 640px) 55vw, 80vw';
 
             return (
               <div
                 key={`${row.id}-${idx}`}
+                aria-hidden={isClone || undefined}
                 className={`sf-slide ${slide.wide ? 'sf-wide' : ''}`}
               >
                 <a
                   href={projectHref}
                   draggable={false}
+                  tabIndex={isClone ? -1 : undefined}
                   onClick={handleSlideClick}
                   aria-label={slide.label ? `Open project ${slide.label}` : 'Open project'}
                   className="sf-media-card block cursor-pointer active:opacity-90 transition-opacity"
@@ -432,25 +480,35 @@ function DriftingRow({ row, rowIndex }) {
                     {slide.type === 'video' || isVideoPath(slide.src) ? (
                       <video
                         src={slide.src}
-                        poster={slide.poster}
+                        poster={slide.posterWebp || slide.poster}
                         width={slide.width || 1080}
                         height={slide.height || 1350}
-                        autoPlay
                         muted
                         loop
                         playsInline
-                        preload={rowIndex === 0 ? 'auto' : 'metadata'}
+                        preload="none"
                         className={mediaClass}
-                      />
+                      >
+                        <track
+                          kind="captions"
+                          src="/media/silent.vtt"
+                          srcLang="de"
+                          label="Ohne Ton"
+                          default
+                        />
+                      </video>
                     ) : (
                       <img
-                        src={slide.src}
-                        alt={slide.label || ''}
+                        src={slide.thumbSrc || slide.src}
+                        srcSet={slide.thumbSrcSet}
+                        sizes={slide.thumbSrcSet ? imgSizes : undefined}
+                        alt=""
                         width={slide.width || 1080}
                         height={slide.height || 1350}
                         draggable={false}
-                        loading={isEagerRow ? 'eager' : 'lazy'}
-                        decoding={rowIndex === 0 ? 'sync' : 'async'}
+                        loading={isFirstRow ? 'eager' : 'lazy'}
+                        decoding="async"
+                        {...(isLcpImage ? { fetchpriority: 'high' } : {})}
                         className={mediaClass}
                       />
                     )}
@@ -472,7 +530,7 @@ function DriftingRow({ row, rowIndex }) {
   );
 }
 
-export default function DriftingGallery({ identity, rows = [] }) {
+export default function DriftingGallery({ rows = [] }) {
   const [canScrollNext, setCanScrollNext] = useState(true);
 
   useEffect(() => {
