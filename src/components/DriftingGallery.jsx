@@ -21,6 +21,43 @@ function getNextScrollState() {
   return { nextTarget };
 }
 
+function VideoSlideMedia({ src, poster, width, height, className, isFirstRow }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  return (
+    <>
+      {poster && (
+        <img
+          src={poster}
+          alt=""
+          width={width}
+          height={height}
+          draggable={false}
+          loading={isFirstRow ? 'eager' : 'lazy'}
+          decoding="async"
+          className={className}
+        />
+      )}
+      <video
+        src={src}
+        poster={poster}
+        width={width}
+        height={height}
+        muted
+        loop
+        playsInline
+        preload="none"
+        onPlaying={() => setIsPlaying(true)}
+        className={`${className} absolute inset-0 transition-opacity duration-300 ${
+          isPlaying ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        <track kind="captions" src="/media/silent.vtt" srcLang="de" label="Ohne Ton" default />
+      </video>
+    </>
+  );
+}
+
 function DriftingRow({ row, rowIndex }) {
   const viewportRef = useRef(null);
   const trackRef = useRef(null);
@@ -46,7 +83,8 @@ function DriftingRow({ row, rowIndex }) {
 
   const [draggingClass, setDraggingClass] = useState(false);
 
-  // Ensure one cycle spans >= 4 slots (>= 100vw desktop / >= 320vw mobile), then render 3 cycles
+  // Ensure one cycle spans >= 4 slots (> 100vw on desktop & mobile), then render 2 cycles
+  // (keeps total track width within iOS Safari's GPU compositing texture limit)
   const cycleSlides =
     row.slides.length >= 4
       ? row.slides
@@ -54,7 +92,7 @@ function DriftingRow({ row, rowIndex }) {
         ? [...row.slides, ...row.slides]
         : [...row.slides, ...row.slides, ...row.slides, ...row.slides];
   const cycleLength = cycleSlides.length;
-  const renderedSlides = [...cycleSlides, ...cycleSlides, ...cycleSlides];
+  const renderedSlides = [...cycleSlides, ...cycleSlides];
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -69,6 +107,15 @@ function DriftingRow({ row, rowIndex }) {
     let videosArmed = false;
     const visibleVideos = new Set();
 
+    // Position each slide individually inside a viewport-wide track so no GPU layer
+    // ever approaches iOS Safari's 8192px physical texture limit (which caused blank white gaps).
+    const slideEls = Array.from(track.children);
+    let basePos = [];
+    let totalWidth = 0;
+    let wrapBuffer = 0;
+
+    track.classList.add('is-ring');
+
     const updateViewportMode = () => {
       const prefersReducedMotion = window.matchMedia(
         '(prefers-reduced-motion: reduce)'
@@ -76,32 +123,51 @@ function DriftingRow({ row, rowIndex }) {
       st.autoDrift = !prefersReducedMotion;
     };
 
-    const normalizePosition = () => {
-      const w = st.cycleWidth;
-      if (!w) return;
-      const mod = ((st.x % w) + w) % w;
-      st.x = mod - 2 * w;
-    };
-
     const applyTransform = () => {
-      normalizePosition();
-      track.style.transform = `translate3d(${st.x}px, 0, 0)`;
+      if (!totalWidth) return;
+      if (!st.isDragging) {
+        const mod = ((st.x % totalWidth) + totalWidth) % totalWidth;
+        st.x = mod === 0 ? 0 : mod - totalWidth;
+      }
+      const x = st.x;
+      for (let i = 0; i < slideEls.length; i++) {
+        const raw = basePos[i] + x + wrapBuffer;
+        const wrapped = ((raw % totalWidth) + totalWidth) % totalWidth - wrapBuffer;
+        slideEls[i].style.transform = `translate3d(${wrapped}px, 0, 0)`;
+      }
     };
 
     const measureTrack = () => {
-      const totalWidth = track.scrollWidth;
-      if (!totalWidth) return;
-      const newCycleWidth = totalWidth / 3;
-      if (st.cycleWidth === 0) {
-        st.cycleWidth = newCycleWidth;
-        st.x = -newCycleWidth - (rowIndex % 2) * 140;
-      } else {
-        st.cycleWidth = newCycleWidth;
+      let nextTotal = 0;
+      let nextMax = 0;
+      const nextBase = new Array(slideEls.length);
+      for (let i = 0; i < slideEls.length; i++) {
+        nextBase[i] = nextTotal;
+        const w = slideEls[i].getBoundingClientRect().width;
+        nextTotal += w;
+        if (w > nextMax) nextMax = w;
       }
+      if (!nextTotal) return;
+
+      if (totalWidth === 0) {
+        st.x = rowIndex % 2 === 0 ? 0 : -140;
+      } else if (Math.abs(nextTotal - totalWidth) > 1) {
+        st.x = (st.x / totalWidth) * nextTotal;
+      }
+
+      basePos = nextBase;
+      totalWidth = nextTotal;
+      wrapBuffer = nextMax + 24;
+      st.cycleWidth = nextTotal / 2;
       applyTransform();
     };
 
     const videos = Array.from(track.querySelectorAll('video'));
+    const promoteLazyImages = () => {
+      track.querySelectorAll('img[loading="lazy"]').forEach((img) => {
+        img.loading = 'eager';
+      });
+    };
 
     const syncVideos = () => {
       videos.forEach((vid) => {
@@ -127,16 +193,18 @@ function DriftingRow({ row, rowIndex }) {
       measureTrack();
     });
     resizeObserver.observe(viewport);
-    resizeObserver.observe(track);
 
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           isVisible = entry.isIntersecting;
+          if (entry.isIntersecting) {
+            promoteLazyImages();
+          }
           syncVideos();
         });
       },
-      { rootMargin: '250px 0px' }
+      { rootMargin: '600px 0px' }
     );
     io.observe(viewport);
 
@@ -406,6 +474,10 @@ function DriftingRow({ row, rowIndex }) {
       resizeObserver.disconnect();
       io.disconnect();
       if (videoIo) videoIo.disconnect();
+      track.classList.remove('is-ring');
+      slideEls.forEach((el) => {
+        el.style.transform = '';
+      });
       viewport.removeEventListener('touchstart', onTouchStart);
       viewport.removeEventListener('touchmove', onTouchMove);
       viewport.removeEventListener('touchend', onTouchEnd);
@@ -450,8 +522,8 @@ function DriftingRow({ row, rowIndex }) {
 
             const cycleIndex = Math.floor(idx / cycleLength);
             const indexInCycle = idx % cycleLength;
-            // Cycle 2 sits at x = 0 after hydration; hide off-screen marquee clones from AT & Tab order
-            const isClone = cycleIndex !== 2;
+            // Cycle 0 starts at x = 0; hide duplicate cycle from AT & Tab order
+            const isClone = cycleIndex !== 0;
 
             const isFirstRow = rowIndex === 0;
             const isLcpImage = isFirstRow && indexInCycle === 0;
@@ -488,28 +560,17 @@ function DriftingRow({ row, rowIndex }) {
                 >
                   <div
                     style={frameAspect ? { aspectRatio: frameAspect } : undefined}
-                    className="w-full overflow-hidden bg-ink-tint"
+                    className="relative w-full overflow-hidden bg-ink-tint"
                   >
                     {slide.type === 'video' || isVideoPath(slide.src) ? (
-                      <video
+                      <VideoSlideMedia
                         src={slide.src}
                         poster={slide.posterWebp || slide.poster}
                         width={slide.width || 1080}
                         height={slide.height || 1350}
-                        muted
-                        loop
-                        playsInline
-                        preload="none"
                         className={mediaClass}
-                      >
-                        <track
-                          kind="captions"
-                          src="/media/silent.vtt"
-                          srcLang="de"
-                          label="Ohne Ton"
-                          default
-                        />
-                      </video>
+                        isFirstRow={isFirstRow}
+                      />
                     ) : (
                       <img
                         src={slide.thumbSrc || slide.src}
