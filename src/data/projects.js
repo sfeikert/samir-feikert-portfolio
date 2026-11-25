@@ -24,7 +24,7 @@ export const siteIdentity = {
   monogram: 'SAMIR FEIKERT',
   subtitle: 'Ausgebildeter Fotograf aus Düsseldorf',
   heroIntro:
-    'Ausgebildeter Fotograf aus Düsseldorf mit Fokus auf authentische Bilder — ehrlich, analog inspiriert und auf das Wesentliche reduziert.',
+    'Ausgebildeter Fotograf aus Düsseldorf mit Fokus auf authentische Bilder – analog inspiriert, aber modern und auf das Wesentliche reduziert.',
   email: 'contact.samirfeikert@gmail.com',
   phone: '+49 176 31501119',
   instagram: {
@@ -39,11 +39,11 @@ export const siteIdentity = {
 };
 
 export const aboutContent = {
-  headline: 'Ich bin Samir, Fotograf mit Ausbildung in Freiburg und Sitz in Düsseldorf.',
+  headline: 'Hallo, ich bin Samir, ausgebildeter Fotograf in Düsseldorf.',
   lead:
-    'Mit einer Leidenschaft für authentische Bilder, bei denen Momente gezeigt werden so wie sie sind – ehrlich und ohne Inszenierung.',
+    'Ich fotografiere freie Serien, Portraits, Editorials, Architektur und Auftragsarbeiten.',
   body:
-    'Mit einem klaren Blick für richtige Momente, Licht und Ausdruck arbeite ich analog inspiriert, aber modern umgesetzt – reduziert auf das Wesentliche.\n\nMeine Fotografie soll nicht nur festhalten, sondern eine Geschichte erzählen. In einer Zeit, in der so vieles inszeniert wirkt, liegt mein Fokus auf Authentizität.',
+    'Mit dem Fokus auf authentische, analog inspirierte und zugleich moderne Bilder arbeite ich gezielt mit Licht, Farbe und allem, was dazugehört.\n\nDa heute vieles gestellt wirkt, möchte ich reduziert bleiben und möglichst nah am Echten sein.',
 };
 
 export const exhibitionItems = [

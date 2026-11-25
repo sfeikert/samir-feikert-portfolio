@@ -74,7 +74,7 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
           {/* Single-Row Pill Navigation + Crisp Full-Width Hairline beneath */}
           <nav
             aria-label="Primary navigation"
-            className="mt-3.5 sm:mt-5 pb-3.5 sm:pb-4 border-b border-ink/15 flex items-center justify-between gap-2"
+            className="relative z-10 mt-1 sm:-mt-1.5 lg:-mt-4 pb-3 sm:pb-3.5 border-b border-ink/15 flex items-center justify-between gap-2"
           >
             <div className="flex items-center gap-1.5 sm:gap-2">
               <button
@@ -108,7 +108,7 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
           {/* Flush-Left Monospace Intro Statement */}
           {identity.heroIntro && (
             <div className="pt-7 sm:pt-10 lg:pt-12 flex justify-end">
-              <p className="w-full max-w-[36rem] font-mono font-normal text-[1.2rem] sm:text-[1.35rem] lg:text-[1.45rem] xl:text-[1.55rem] leading-[1.38] tracking-[-0.01em] text-pretty text-ink/90">
+              <p className="w-full max-w-[32rem] font-mono font-normal text-[1.02rem] sm:text-[1.15rem] lg:text-[1.23rem] xl:text-[1.32rem] leading-[1.42] tracking-[-0.01em] text-pretty text-ink/90">
                 {identity.heroIntro}
               </p>
             </div>

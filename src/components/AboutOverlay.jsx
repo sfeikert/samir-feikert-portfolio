@@ -140,7 +140,7 @@ export default function AboutOverlay({
               Anfrage
             </h3>
             <p className="font-sans text-sm text-ink-muted tracking-[0.12px] max-w-xl">
-              Für Shootings, Editorials oder freie Projekte — schreib mir gerne direkt per E-Mail.
+              Für Auftragsarbeiten oder freie Projekte schreibe mir gerne direkt eine E-Mail.
             </p>
           </div>
 
