@@ -4,20 +4,23 @@ import path from 'node:path';
 import { galleryRows, getAllProjects, toProjectSlug } from '../data/projects.js';
 
 export const THUMB_TARGET_WIDTHS = [600, 1000];
+const LANDSCAPE_THUMB_WIDTHS = [600, 1000, 1400];
 
 export function getThumbHash(publicUrl) {
   return crypto.createHash('sha1').update(publicUrl).digest('hex').slice(0, 10);
 }
 
-export function getThumbWidths(naturalWidth) {
+export function getThumbWidths(naturalWidth, naturalHeight = 0) {
   const w = Number(naturalWidth) || 1000;
-  const set = new Set(THUMB_TARGET_WIDTHS.map((target) => Math.min(target, w)));
+  const h = Number(naturalHeight) || 0;
+  const targets = h > 0 && w / h > 1.05 ? LANDSCAPE_THUMB_WIDTHS : THUMB_TARGET_WIDTHS;
+  const set = new Set(targets.map((target) => Math.min(target, w)));
   return Array.from(set).sort((a, b) => a - b);
 }
 
-function resolveCoverThumbMeta(publicUrl, naturalWidth, publicMedienDir) {
+function resolveCoverThumbMeta(publicUrl, naturalWidth, naturalHeight, publicMedienDir) {
   const hash = getThumbHash(publicUrl);
-  const widths = getThumbWidths(naturalWidth);
+  const widths = getThumbWidths(naturalWidth, naturalHeight);
   const thumbsDir = path.join(publicMedienDir, '_thumbs');
   const entries = [];
 
@@ -79,11 +82,11 @@ const STARTSEITE_ORDER = [
   'samuel-wenkenpark',
   'heizr-alles',
   'samuel-brillenfotos-beyeler',
-  'hannah',
+  'vitra-architektur',
   'jamelia-shooting',
   'shooting-hannes',
   'passione-engadina-22',
-  'vitra-architektur',
+  'hannah',
   'samuel-ausfahrt-stetten',
   'hannes-vitra-nacht',
   'landrover-tuellinger',
@@ -111,7 +114,7 @@ const STARTSEITE_META = {
   },
   'vitra-architektur': {
     label: 'Vitra — Architecture',
-    cover: '_DSF3025.jpg',
+    cover: '_DSF3005.jpg',
   },
   'dbb-double-header': {
     label: 'DBB — Double Header',
@@ -139,7 +142,7 @@ const STARTSEITE_META = {
   },
   'samuel-ausfahrt-stetten': {
     label: 'Samuel — Stetten',
-    cover: '_DSF7458.jpg',
+    cover: '_DSF7448.jpg',
   },
   'hannes-vitra-nacht': {
     label: 'Hannes — Vitra',
@@ -151,11 +154,11 @@ const STARTSEITE_META = {
   },
   'heizr-alles': {
     label: 'Heizr',
-    cover: '_DSF6982.jpg',
+    cover: '_DSF7045.jpg',
   },
   'samuel-wenkenpark': {
     label: 'Samuel — Wenkenpark',
-    cover: 'id edit.jpg',
+    cover: '_DSF6817.jpg',
   },
   'landrover-tuellinger': {
     label: 'Defender — Tüllinger',
@@ -589,6 +592,43 @@ function sortByPreferredOrder(projects, orderList) {
   });
 }
 
+const SLIDE_VARIETY_CYCLE = [1.0, 0.93, 1.06, 0.96, 1.04];
+// Subtle vertical stagger per row (in vh) — varies across neighbors and across the 5->1 loop seam
+const ROW_OFFSETS_VH = [
+  [-2.2, 2.4, -1.2, 2.8, 0.6],
+  [2.4, -2.4, 1.4, -2.6, -0.6],
+  [-1.8, 2.8, -2.4, 1.6, 0.4],
+  [2.0, -2.0, 2.6, -1.6, -0.8],
+];
+
+/**
+ * Computes orientation-aware responsive slide widths so landscape frames match
+ * portrait heights while preserving subtle editorial size variety across rows.
+ */
+function computeSlideWidths(slide, rowIndex, slideIndex) {
+  const w = Number(slide.width) || 1080;
+  const h = Number(slide.height) || 1350;
+  const ar = w / h;
+  const variety = SLIDE_VARIETY_CYCLE[(rowIndex * 2 + slideIndex) % SLIDE_VARIETY_CYCLE.length];
+  const rowOffsets = ROW_OFFSETS_VH[rowIndex % ROW_OFFSETS_VH.length];
+  const y = rowOffsets[slideIndex % rowOffsets.length];
+
+  if (ar > 1.05) {
+    const lg = Math.round(Math.max(38, Math.min(54, 32 * ar * variety)));
+    const md = Math.round(Math.max(68, Math.min(86, 55 * ar * variety)));
+    const sm = Math.round(
+      Math.max(88, Math.min(96, 86 + (ar - 1.2) * 14 + (variety - 1) * 40))
+    );
+    return { sm, md, lg, ar: Number(ar.toFixed(4)), y };
+  }
+
+  const baseLg = ar < 0.63 ? 23 : ar > 0.77 ? 26.5 : 25;
+  const lg = Math.round(Math.max(22, Math.min(28, baseLg * variety)));
+  const md = Math.round(Math.max(44, Math.min(55, baseLg * 2 * variety)));
+  const sm = Math.round(Math.max(66, Math.min(76, 71 * variety)));
+  return { sm, md, lg, ar: Number(ar.toFixed(4)), y };
+}
+
 /**
  * Splits start-page projects into balanced horizontal rows (max 4–5 items per row)
  * so the site scrolls smoothly across multiple curated rows.
@@ -606,7 +646,11 @@ function chunkIntoRows(projects, maxPerRow = MAX_SLIDES_PER_ROW) {
   for (let r = 0; r < rowCount; r++) {
     const count = baseSize + (r < remainder ? 1 : 0);
     const rowId = `row-${String(r + 1).padStart(2, '0')}`;
-    const slides = projects.slice(cursor, cursor + count).map((p) => ({ ...p, rowId }));
+    const slides = projects.slice(cursor, cursor + count).map((p, slideIdx) => ({
+      ...p,
+      rowId,
+      layoutWidths: computeSlideWidths(p, r, slideIdx),
+    }));
     // Keep 3-slide rows at 100vw (50vw + 25vw + 25vw) by expanding one landscape slide
     if (slides.length === 3 && !slides.some((s) => s.wide)) {
       const landscape = slides.find((s) => s.width > s.height);
@@ -750,7 +794,7 @@ export function loadMedienProjects() {
     const cover = sortedItems[0];
     const thumbMeta =
       cover.type === 'image'
-        ? resolveCoverThumbMeta(cover.src, cover.width, publicMedienDir)
+        ? resolveCoverThumbMeta(cover.src, cover.width, cover.height, publicMedienDir)
         : { thumbSrc: undefined, thumbSrcSet: undefined };
     const posterWebp =
       cover.type === 'video' ? resolvePosterWebp(cover.poster, publicMedienDir) : undefined;

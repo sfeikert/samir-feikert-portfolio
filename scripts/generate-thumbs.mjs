@@ -57,7 +57,7 @@ async function main() {
     if (item.type === 'image' && item.src?.startsWith('/medien/')) {
       const srcAbs = urlToPublicPath(item.src);
       const hash = getThumbHash(item.src);
-      const widths = getThumbWidths(item.width);
+      const widths = getThumbWidths(item.width, item.height);
 
       for (const w of widths) {
         const fileName = `${hash}-${w}.webp`;

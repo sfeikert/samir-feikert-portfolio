@@ -455,14 +455,27 @@ function DriftingRow({ row, rowIndex }) {
 
             const isFirstRow = rowIndex === 0;
             const isLcpImage = isFirstRow && indexInCycle === 0;
-            const imgSizes = slide.wide
-              ? '(min-width: 1024px) 50vw, (min-width: 640px) 55vw, 94vw'
-              : '(min-width: 1024px) 25vw, (min-width: 640px) 55vw, 80vw';
+            const lw = slide.layoutWidths;
+            const slideStyle = lw
+              ? {
+                  '--sf-w-sm': `${lw.sm}vw`,
+                  '--sf-w-md': `${lw.md}vw`,
+                  '--sf-w-lg': `${lw.lg}vw`,
+                  '--sf-ar': lw.ar,
+                  ...(lw.y ? { '--sf-y': `${lw.y}vh` } : {}),
+                }
+              : undefined;
+            const imgSizes = lw
+              ? `(min-width: 1024px) ${lw.lg}vw, (min-width: 640px) ${lw.md}vw, ${lw.sm}vw`
+              : slide.wide
+                ? '(min-width: 1024px) 50vw, (min-width: 640px) 55vw, 94vw'
+                : '(min-width: 1024px) 25vw, (min-width: 640px) 55vw, 80vw';
 
             return (
               <div
                 key={`${row.id}-${idx}`}
                 aria-hidden={isClone || undefined}
+                style={slideStyle}
                 className={`sf-slide ${slide.wide ? 'sf-wide' : ''}`}
               >
                 <a

@@ -30,17 +30,21 @@ const homeRows = activeRows.map((row) => ({
     wide: slide.wide,
     aspect: slide.aspect,
     startIndex: slide.startIndex,
+    layoutWidths: slide.layoutWidths,
   })),
 }));
 
 const firstImageSlide = homeRows[0]?.slides?.find((slide) => slide.type !== 'video');
+const firstWidths = firstImageSlide?.layoutWidths;
 const lcpPreload = firstImageSlide
   ? {
       href: firstImageSlide.thumbSrc || firstImageSlide.src,
       srcSet: firstImageSlide.thumbSrcSet,
-      sizes: firstImageSlide.wide
-        ? '(min-width: 1024px) 50vw, (min-width: 640px) 55vw, 94vw'
-        : '(min-width: 1024px) 25vw, (min-width: 640px) 55vw, 80vw',
+      sizes: firstWidths
+        ? `(min-width: 1024px) ${firstWidths.lg}vw, (min-width: 640px) ${firstWidths.md}vw, ${firstWidths.sm}vw`
+        : firstImageSlide.wide
+          ? '(min-width: 1024px) 50vw, (min-width: 640px) 55vw, 94vw'
+          : '(min-width: 1024px) 25vw, (min-width: 640px) 55vw, 80vw',
     }
   : null;
 const publicIdentity = {
