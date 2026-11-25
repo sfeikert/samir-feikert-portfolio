@@ -66,7 +66,7 @@ const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v']);
 
 // Cloudflare Pages has a strict 25 MiB per-file limit
 const MAX_CLOUDFLARE_BYTES = 24.8 * 1024 * 1024;
-const MAX_SLIDES_PER_ROW = 4;
+const MAX_SLIDES_PER_ROW = 5;
 
 // Curated order, clean labels, and cover selections for Medien/startseite/
 const STARTSEITE_ORDER = [
@@ -74,11 +74,11 @@ const STARTSEITE_ORDER = [
   'porsche-avia-nacht',
   'timon-editorial',
   'mercedes-avia',
+  'dbb-double-header',
   'basketball-portraits',
   'samuel-wenkenpark',
   'heizr-alles',
   'samuel-brillenfotos-beyeler',
-  'dbb-double-header',
   'hannah',
   'jamelia-shooting',
   'shooting-hannes',
