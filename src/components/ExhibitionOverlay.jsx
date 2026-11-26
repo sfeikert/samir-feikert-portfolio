@@ -1,12 +1,47 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { exhibitionItems as defaultExhibitionItems } from '../data/projects.js';
 
-function renderMedia(item, isEager) {
-  if (item.type === 'video') {
-    return (
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusableElements(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+    (el) =>
+      !el.hasAttribute('disabled') &&
+      el.getAttribute('aria-hidden') !== 'true' &&
+      el.getClientRects().length > 0
+  );
+}
+
+function ExhibitionVideo({ item, isEager }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const posterSrc = item.posterWebp || item.poster;
+
+  return (
+    <div
+      style={
+        item.width && item.height
+          ? { aspectRatio: `${item.width} / ${item.height}` }
+          : undefined
+      }
+      className="relative w-full overflow-hidden"
+    >
+      {posterSrc && (
+        <img
+          src={posterSrc}
+          alt=""
+          width={item.width}
+          height={item.height}
+          loading={isEager ? 'eager' : 'lazy'}
+          decoding="async"
+          draggable={false}
+          className="block w-full h-auto object-cover pointer-events-none"
+        />
+      )}
       <video
         src={item.src}
-        poster={item.posterWebp || item.poster}
+        poster={posterSrc}
         width={item.width}
         height={item.height}
         autoPlay
@@ -15,15 +50,29 @@ function renderMedia(item, isEager) {
         playsInline
         preload="metadata"
         onLoadedMetadata={(e) => {
-          e.currentTarget.muted = true;
-          e.currentTarget.defaultMuted = true;
-          e.currentTarget.play().catch(() => {});
+          const vid = e.currentTarget;
+          vid.muted = true;
+          vid.defaultMuted = true;
+          if (vid.getClientRects().length > 0) {
+            vid.play().catch(() => {});
+          }
         }}
-        className="block w-full h-auto object-cover pointer-events-none"
+        onPlaying={() => setIsPlaying(true)}
+        className={`block w-full pointer-events-none transition-opacity duration-300 ${
+          posterSrc
+            ? `h-full object-cover absolute inset-0 ${isPlaying ? 'opacity-100' : 'opacity-0'}`
+            : 'h-auto object-cover opacity-100'
+        }`}
       >
         <track kind="captions" src="/media/silent.vtt" srcLang="de" label="Ohne Ton" default />
       </video>
-    );
+    </div>
+  );
+}
+
+function renderMedia(item, isEager) {
+  if (item.type === 'video') {
+    return <ExhibitionVideo item={item} isEager={isEager} />;
   }
 
   return (
@@ -44,24 +93,91 @@ function renderMedia(item, isEager) {
 
 export default function ExhibitionOverlay({ isOpen, onClose, items }) {
   const activeItems = items?.length ? items : defaultExhibitionItems;
+  const [isClosing, setIsClosing] = useState(false);
   const overlayRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const closeTimerRef = useRef(null);
+  const isClosingRef = useRef(false);
+
+  const requestClose = useCallback(() => {
+    if (isClosingRef.current) return;
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      onClose();
+      return;
+    }
+    isClosingRef.current = true;
+    setIsClosing(true);
+    closeTimerRef.current = window.setTimeout(() => {
+      closeTimerRef.current = null;
+      isClosingRef.current = false;
+      onClose();
+    }, 180);
+  }, [onClose]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsClosing(false);
+      isClosingRef.current = false;
+      return;
+    }
+
+    const focusRaf = requestAnimationFrame(() => {
+      if (closeButtonRef.current) {
+        closeButtonRef.current.focus({ preventScroll: true });
+      } else {
+        overlayRef.current?.focus({ preventScroll: true });
+      }
+    });
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        onClose();
+        e.preventDefault();
+        requestClose();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const focusables = getFocusableElements(overlayRef.current);
+        if (focusables.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+
+        if (e.shiftKey) {
+          if (active === first || !overlayRef.current?.contains(active)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else if (active === last || !overlayRef.current?.contains(active)) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
 
     return () => {
+      cancelAnimationFrame(focusRaf);
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, requestClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -92,7 +208,9 @@ export default function ExhibitionOverlay({ isOpen, onClose, items }) {
     );
 
     videos.forEach((vid) => {
-      playVideo(vid);
+      if (vid.getClientRects().length > 0) {
+        playVideo(vid);
+      }
       io.observe(vid);
     });
 
@@ -110,7 +228,10 @@ export default function ExhibitionOverlay({ isOpen, onClose, items }) {
       role="dialog"
       aria-modal="true"
       aria-label="Exhibition"
-      className="fixed inset-0 z-50 bg-white text-ink overflow-y-auto flex flex-col justify-between sf-fade-in"
+      tabIndex={-1}
+      className={`fixed inset-0 z-50 bg-white text-ink overflow-y-auto flex flex-col justify-between outline-none ${
+        isClosing ? 'sf-fade-out pointer-events-none' : 'sf-fade-in'
+      }`}
     >
       {/* Sticky Top Bar */}
       <div className="sticky top-0 z-40 w-full px-6 sm:px-8 lg:px-10 pt-[max(1rem,env(safe-area-inset-top))] pb-3 bg-white/95 backdrop-blur-sm flex items-center justify-between border-b border-ink/10 shrink-0">
@@ -118,8 +239,9 @@ export default function ExhibitionOverlay({ isOpen, onClose, items }) {
           Exhibition
         </span>
         <button
+          ref={closeButtonRef}
           type="button"
-          onClick={onClose}
+          onClick={requestClose}
           aria-label="Schließen"
           className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] -mr-3 text-ink hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
         >
@@ -150,14 +272,15 @@ export default function ExhibitionOverlay({ isOpen, onClose, items }) {
               <a
                 key={item.id}
                 href={`/projects/${item.slug}`}
-                aria-label={`Open project ${item.title}`}
+                aria-label={`${item.title} öffnen`}
+                draggable={false}
                 style={{
                   left: `${slot.left}%`,
                   top: `${slot.top}%`,
                   width: `${slot.width}%`,
                   zIndex: slot.zIndex,
                 }}
-                className="group absolute block overflow-hidden bg-ink-tint hover:!z-30 focus-visible:!z-30 transition-transform duration-200 ease-out hover:scale-[1.018] cursor-pointer"
+                className="sf-no-callout group absolute block overflow-hidden bg-ink-tint hover:!z-30 focus-visible:!z-30 transition-transform duration-200 ease-out hover:scale-[1.018] cursor-pointer"
               >
                 {renderMedia(item, idx < 7)}
               </a>
@@ -179,14 +302,15 @@ export default function ExhibitionOverlay({ isOpen, onClose, items }) {
               <a
                 key={item.id}
                 href={`/projects/${item.slug}`}
-                aria-label={`Open project ${item.title}`}
+                aria-label={`${item.title} öffnen`}
+                draggable={false}
                 style={{
                   left: `${slot.left}%`,
                   top: `${slot.top}%`,
                   width: `${slot.width}%`,
                   zIndex: slot.zIndex,
                 }}
-                className="absolute block overflow-hidden bg-ink-tint transition-transform duration-150 ease-out active:scale-[0.985] active:!z-30 focus-visible:!z-30 cursor-pointer"
+                className="sf-no-callout absolute block overflow-hidden bg-ink-tint transition-transform duration-150 ease-out active:scale-[0.985] active:!z-30 focus-visible:!z-30 cursor-pointer"
               >
                 {renderMedia(item, idx < 6)}
               </a>

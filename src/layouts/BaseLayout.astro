@@ -2,16 +2,17 @@
 import '../styles/global.css';
 
 const {
-  title = 'Samir Feikert — Photographer',
-  description = 'Portfolio of Samir Feikert — Trained Photographer based in Düsseldorf.',
+  title = 'Samir Feikert — Fotograf aus Düsseldorf',
+  description = 'Ausgebildeter Fotograf aus Düsseldorf mit Fokus auf authentische Bilder – analog inspiriert, aber modern und auf das Wesentliche reduziert.',
+  ogImage = null,
   preloadImage = null,
   noindex = false,
+  jsonLd = null,
 } = Astro.props;
 
-const canonicalUrl = new URL(
-  Astro.url.pathname,
-  Astro.site || 'https://samirfeikert.com'
-).href;
+const siteOrigin = Astro.site || 'https://samirfeikert.com';
+const canonicalUrl = new URL(Astro.url.pathname, siteOrigin).href;
+const ogImageUrl = ogImage ? new URL(ogImage, siteOrigin).href : null;
 ---
 
 <!doctype html>
@@ -19,8 +20,10 @@ const canonicalUrl = new URL(
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" />
     {noindex && <meta name="robots" content="noindex, follow" />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="canonical" href={canonicalUrl} />
     <meta name="description" content={description} />
     <title>{title}</title>
@@ -31,16 +34,19 @@ const canonicalUrl = new URL(
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content="Samir Feikert" />
+    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
     {preloadImage && (
       <link
         rel="preload"
         as="image"
         href={preloadImage.href}
         imagesrcset={preloadImage.srcSet}
-        imagesizes={preloadImage.sizes}
+        imagesizes={preloadImage.srcSet ? preloadImage.sizes : undefined}
         fetchpriority="high"
       />
     )}
@@ -51,7 +57,7 @@ const canonicalUrl = new URL(
       href="#main-content"
       class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:bg-ink focus:text-white focus:px-4 focus:py-2 focus:font-sans focus:text-xs focus:uppercase focus:tracking-wider"
     >
-      Skip to main content
+      Zum Inhalt springen
     </a>
     <slot />
   </body>

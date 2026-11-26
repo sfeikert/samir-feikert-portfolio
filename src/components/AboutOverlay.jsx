@@ -1,5 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { aboutContent, siteIdentity } from '../data/projects.js';
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusableElements(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+    (el) =>
+      !el.hasAttribute('disabled') &&
+      el.getAttribute('aria-hidden') !== 'true' &&
+      el.getClientRects().length > 0
+  );
+}
 
 function InstagramIcon({ className = 'w-4 h-4' }) {
   return (
@@ -30,22 +43,92 @@ export default function AboutOverlay({
   const fullIdentity = { ...siteIdentity, ...identity };
   const [inquiryClicked, setInquiryClicked] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
   const inquiryRef = useRef(null);
+  const closeTimerRef = useRef(null);
+  const isClosingRef = useRef(false);
+
+  const requestClose = useCallback(() => {
+    if (isClosingRef.current) return;
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      onClose();
+      return;
+    }
+    isClosingRef.current = true;
+    setIsClosing(true);
+    closeTimerRef.current = window.setTimeout(() => {
+      closeTimerRef.current = null;
+      isClosingRef.current = false;
+      onClose();
+    }, 180);
+  }, [onClose]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsClosing(false);
+      isClosingRef.current = false;
+      return;
+    }
+
+    const focusRaf = requestAnimationFrame(() => {
+      if (closeButtonRef.current) {
+        closeButtonRef.current.focus({ preventScroll: true });
+      } else {
+        dialogRef.current?.focus({ preventScroll: true });
+      }
+    });
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        requestClose();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const focusables = getFocusableElements(dialogRef.current);
+        if (focusables.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+
+        if (e.shiftKey) {
+          if (active === first || !dialogRef.current?.contains(active)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else if (active === last || !dialogRef.current?.contains(active)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
 
     return () => {
+      cancelAnimationFrame(focusRaf);
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, requestClose]);
 
   useEffect(() => {
     if (!isOpen || initialSection !== 'inquiry') return;
@@ -80,10 +163,14 @@ export default function AboutOverlay({
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="About & Anfrage — Samir Feikert"
-      className="fixed inset-0 z-50 bg-white text-ink overflow-y-auto sf-fade-in"
+      tabIndex={-1}
+      className={`fixed inset-0 z-50 bg-white text-ink overflow-y-auto outline-none ${
+        isClosing ? 'sf-fade-out pointer-events-none' : 'sf-fade-in'
+      }`}
     >
       {/* Top Header */}
       <div className="sticky top-0 z-10 w-full px-6 sm:px-8 lg:px-10 pt-[max(1rem,env(safe-area-inset-top))] pb-4 bg-white/95 backdrop-blur-sm flex items-center justify-between border-b border-ink/10">
@@ -96,8 +183,9 @@ export default function AboutOverlay({
           </span>
         </div>
         <button
+          ref={closeButtonRef}
           type="button"
-          onClick={onClose}
+          onClick={requestClose}
           aria-label="Schließen"
           className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] -mr-3 text-ink hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
         >

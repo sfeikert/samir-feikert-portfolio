@@ -1,16 +1,16 @@
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import SamirWordmark from './SamirWordmark.jsx';
+import SfMonogram from './SfMonogram.jsx';
 
 const AboutOverlay = lazy(() => import('./AboutOverlay.jsx'));
 const ExhibitionOverlay = lazy(() => import('./ExhibitionOverlay.jsx'));
-
-const PILL_CLASS =
-  'inline-flex items-center justify-center gap-1.5 min-h-[36px] sm:min-h-[34px] px-3.5 sm:px-4 py-1.5 font-sans font-normal text-[12px] sm:text-[13px] leading-none tracking-[0.01em] text-ink bg-white hover:bg-ink hover:text-white active:opacity-80 border border-ink/15 hover:border-ink rounded-full transition-colors duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)]';
 
 export default function HeaderBar({ identity, showBackLink = false, exhibitionItems }) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showScrollMark, setShowScrollMark] = useState(false);
   const [activeOverlay, setActiveOverlay] = useState(null);
+  const lastTriggerRef = useRef(null);
+  const mobileToggleRef = useRef(null);
 
   useEffect(() => {
     if (showBackLink) return;
@@ -49,6 +49,54 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleBackToOverview = (e, closeDrawer = false) => {
+    if (closeDrawer) {
+      setMobileDrawerOpen(false);
+    }
+    if (
+      e.metaKey ||
+      e.ctrlKey ||
+      e.shiftKey ||
+      e.altKey ||
+      (e.button != null && e.button !== 0)
+    ) {
+      return;
+    }
+    if (typeof window !== 'undefined' && window.history.length > 1 && document.referrer) {
+      try {
+        const refUrl = new URL(document.referrer);
+        if (refUrl.origin === window.location.origin && refUrl.pathname === '/') {
+          e.preventDefault();
+          window.history.back();
+        }
+      } catch {
+        // Fall through to standard href="/" navigation
+      }
+    }
+  };
+
+  const openOverlay = (section, triggerEl) => {
+    lastTriggerRef.current = triggerEl || document.activeElement;
+    setActiveOverlay(section);
+  };
+
+  const closeOverlay = () => {
+    setActiveOverlay(null);
+    const trigger = lastTriggerRef.current;
+    lastTriggerRef.current = null;
+    requestAnimationFrame(() => {
+      if (trigger && trigger.isConnected && typeof trigger.focus === 'function') {
+        trigger.focus({ preventScroll: true });
+      } else if (
+        mobileToggleRef.current &&
+        mobileToggleRef.current.isConnected &&
+        mobileToggleRef.current.getClientRects().length > 0
+      ) {
+        mobileToggleRef.current.focus({ preventScroll: true });
+      }
+    });
+  };
+
   return (
     <>
       {!showBackLink ? (
@@ -73,21 +121,21 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
 
           {/* Single-Row Pill Navigation + Crisp Full-Width Hairline beneath */}
           <nav
-            aria-label="Primary navigation"
+            aria-label="Hauptnavigation"
             className="relative z-10 mt-1 sm:-mt-1.5 lg:-mt-4 pb-3 sm:pb-3.5 border-b border-ink/15 flex items-center justify-between gap-2"
           >
             <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 type="button"
-                onClick={() => setActiveOverlay('about')}
-                className={PILL_CLASS}
+                onClick={(e) => openOverlay('about', e.currentTarget)}
+                className="sf-pill"
               >
                 About
               </button>
               <button
                 type="button"
-                onClick={() => setActiveOverlay('exhibition')}
-                className={PILL_CLASS}
+                onClick={(e) => openOverlay('exhibition', e.currentTarget)}
+                className="sf-pill"
               >
                 Exhibition
               </button>
@@ -95,8 +143,8 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
 
             <button
               type="button"
-              onClick={() => setActiveOverlay('inquiry')}
-              className={PILL_CLASS}
+              onClick={(e) => openOverlay('inquiry', e.currentTarget)}
+              className="sf-pill"
             >
               <span>Anfrage</span>
               <span aria-hidden="true" className="text-[11px] leading-none">
@@ -120,32 +168,33 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
            ===================================================================== */
         <header className="relative z-30 w-full px-4 sm:px-8 lg:px-10 pt-[max(1rem,env(safe-area-inset-top))] pb-3 shrink-0 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <a href="/" className={PILL_CLASS}>
-              ← Overview
+            <a href="/" onClick={handleBackToOverview} className="sf-pill">
+              ← Übersicht
             </a>
 
-            <nav aria-label="Primary navigation" className="hidden sm:flex items-center gap-1.5 sm:gap-2">
+            <nav aria-label="Hauptnavigation" className="hidden sm:flex items-center gap-1.5 sm:gap-2">
               <button
                 type="button"
-                onClick={() => setActiveOverlay('about')}
-                className={PILL_CLASS}
+                onClick={(e) => openOverlay('about', e.currentTarget)}
+                className="sf-pill"
               >
                 About
               </button>
               <button
                 type="button"
-                onClick={() => setActiveOverlay('exhibition')}
-                className={PILL_CLASS}
+                onClick={(e) => openOverlay('exhibition', e.currentTarget)}
+                className="sf-pill"
               >
                 Exhibition
               </button>
             </nav>
 
             <button
+              ref={mobileToggleRef}
               type="button"
               onClick={() => setMobileDrawerOpen((prev) => !prev)}
               aria-expanded={mobileDrawerOpen}
-              aria-label={mobileDrawerOpen ? 'Close menu' : 'Open menu'}
+              aria-label={mobileDrawerOpen ? 'Menü schließen' : 'Menü öffnen'}
               className="sm:hidden inline-flex items-center justify-center min-w-[36px] min-h-[36px] px-2.5 text-ink bg-white border border-ink/15 rounded-full active:opacity-70 transition-opacity cursor-pointer"
             >
               {mobileDrawerOpen ? (
@@ -170,15 +219,15 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
           <div className="flex items-center gap-1.5 sm:gap-2">
             <a
               href="/"
-              aria-label="Back to start page"
-              className={`${PILL_CLASS} font-display uppercase tracking-[0.04em]`}
+              aria-label="Zur Startseite"
+              className="sf-pill"
             >
-              SF
+              <SfMonogram />
             </a>
             <button
               type="button"
-              onClick={() => setActiveOverlay('inquiry')}
-              className={PILL_CLASS}
+              onClick={(e) => openOverlay('inquiry', e.currentTarget)}
+              className="sf-pill"
             >
               <span>Anfrage</span>
               <span aria-hidden="true" className="text-[11px] leading-none">
@@ -192,20 +241,20 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
       {/* Mobile Fullscreen Menu (Project Detail Pages on narrow screens) */}
       {showBackLink && mobileDrawerOpen && (
         <nav
-          aria-label="Mobile navigation"
+          aria-label="Mobilnavigation"
           className="fixed inset-0 top-16 z-40 bg-white px-6 py-10 sm:hidden flex flex-col gap-5 font-display font-normal uppercase text-3xl tracking-[0em] text-ink sf-fade-in"
         >
           <a
             href="/"
-            onClick={() => setMobileDrawerOpen(false)}
+            onClick={(e) => handleBackToOverview(e, true)}
             className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
           >
-            Overview
+            Übersicht
           </a>
           <button
             type="button"
-            onClick={() => {
-              setActiveOverlay('about');
+            onClick={(e) => {
+              openOverlay('about', e.currentTarget);
               setMobileDrawerOpen(false);
             }}
             className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
@@ -214,8 +263,8 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
           </button>
           <button
             type="button"
-            onClick={() => {
-              setActiveOverlay('exhibition');
+            onClick={(e) => {
+              openOverlay('exhibition', e.currentTarget);
               setMobileDrawerOpen(false);
             }}
             className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
@@ -224,8 +273,8 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
           </button>
           <button
             type="button"
-            onClick={() => {
-              setActiveOverlay('inquiry');
+            onClick={(e) => {
+              openOverlay('inquiry', e.currentTarget);
               setMobileDrawerOpen(false);
             }}
             className="text-left py-2 hover:text-ink-muted active:opacity-70 transition-colors cursor-pointer"
@@ -241,7 +290,7 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
           <AboutOverlay
             isOpen={true}
             initialSection={activeOverlay}
-            onClose={() => setActiveOverlay(null)}
+            onClose={closeOverlay}
             identity={identity}
           />
         )}
@@ -249,7 +298,7 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
         {activeOverlay === 'exhibition' && (
           <ExhibitionOverlay
             isOpen={true}
-            onClose={() => setActiveOverlay(null)}
+            onClose={closeOverlay}
             identity={identity}
             items={exhibitionItems}
           />
@@ -266,15 +315,15 @@ export default function HeaderBar({ identity, showBackLink = false, exhibitionIt
           <button
             type="button"
             onClick={handleScrollToTop}
-            aria-label="Scroll to top"
-            className={`${PILL_CLASS} bg-white/90 backdrop-blur-sm font-display uppercase tracking-[0.04em]`}
+            aria-label="Nach oben scrollen"
+            className="sf-pill bg-white/90 backdrop-blur-sm"
           >
-            SF
+            <SfMonogram />
           </button>
           <button
             type="button"
-            onClick={() => setActiveOverlay('inquiry')}
-            className={`${PILL_CLASS} bg-white/90 backdrop-blur-sm`}
+            onClick={(e) => openOverlay('inquiry', e.currentTarget)}
+            className="sf-pill bg-white/90 backdrop-blur-sm"
           >
             <span>Anfrage</span>
             <span aria-hidden="true" className="text-[11px] leading-none">

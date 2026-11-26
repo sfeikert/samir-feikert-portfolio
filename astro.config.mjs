@@ -5,6 +5,9 @@ import { loadMedienProjects } from './src/utils/loadMedien.js';
 // Tailwind CSS v3 is wired through PostCSS (see postcss.config.mjs).
 export default defineConfig({
   site: 'https://samirfeikert.com',
+  prefetch: {
+    defaultStrategy: 'hover',
+  },
   build: {
     inlineStylesheets: 'always',
   },

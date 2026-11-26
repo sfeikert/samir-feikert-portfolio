@@ -21,20 +21,65 @@ function getNextScrollState() {
   return { nextTarget };
 }
 
+function SlideImage({
+  src,
+  srcSet,
+  sizes,
+  alt,
+  width,
+  height,
+  isFirstRow,
+  isLcpImage,
+  className,
+}) {
+  const imgRef = useRef(null);
+  const [loaded, setLoaded] = useState(isFirstRow);
+
+  useEffect(() => {
+    if (isFirstRow) return;
+    const el = imgRef.current;
+    if (el && el.complete) {
+      setLoaded(true);
+    }
+  }, [isFirstRow, src]);
+
+  return (
+    <img
+      ref={imgRef}
+      src={src}
+      srcSet={srcSet}
+      sizes={sizes}
+      alt={alt}
+      width={width}
+      height={height}
+      draggable={false}
+      loading={isFirstRow ? 'eager' : 'lazy'}
+      decoding="async"
+      {...(isLcpImage ? { fetchpriority: 'high' } : {})}
+      onLoad={!isFirstRow ? () => setLoaded(true) : undefined}
+      onError={!isFirstRow ? () => setLoaded(true) : undefined}
+      className={
+        isFirstRow
+          ? className
+          : `${className} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`
+      }
+    />
+  );
+}
+
 function VideoSlideMedia({ src, poster, width, height, className, isFirstRow }) {
   const [isPlaying, setIsPlaying] = useState(false);
 
   return (
     <>
       {poster && (
-        <img
+        <SlideImage
           src={poster}
           alt=""
           width={width}
           height={height}
-          draggable={false}
-          loading={isFirstRow ? 'eager' : 'lazy'}
-          decoding="async"
+          isFirstRow={isFirstRow}
+          isLcpImage={false}
           className={className}
         />
       )}
@@ -543,6 +588,12 @@ function DriftingRow({ row, rowIndex }) {
                 ? '(min-width: 1024px) 50vw, (min-width: 640px) 55vw, 94vw'
                 : '(min-width: 1024px) 25vw, (min-width: 640px) 55vw, 80vw';
 
+            const slideAlt = !isClone
+              ? slide.label
+                ? `${slide.label} — Fotografie von Samir Feikert`
+                : 'Fotografie von Samir Feikert'
+              : '';
+
             return (
               <div
                 key={`${row.id}-${idx}`}
@@ -555,7 +606,7 @@ function DriftingRow({ row, rowIndex }) {
                   draggable={false}
                   tabIndex={isClone ? -1 : undefined}
                   onClick={handleSlideClick}
-                  aria-label={slide.label ? `Open project ${slide.label}` : 'Open project'}
+                  aria-label={slide.label ? `${slide.label} öffnen` : 'Projekt öffnen'}
                   className="sf-media-card block cursor-pointer active:opacity-90 transition-opacity"
                 >
                   <div
@@ -572,17 +623,15 @@ function DriftingRow({ row, rowIndex }) {
                         isFirstRow={isFirstRow}
                       />
                     ) : (
-                      <img
+                      <SlideImage
                         src={slide.thumbSrc || slide.src}
                         srcSet={slide.thumbSrcSet}
                         sizes={slide.thumbSrcSet ? imgSizes : undefined}
-                        alt=""
+                        alt={slideAlt}
                         width={slide.width || 1080}
                         height={slide.height || 1350}
-                        draggable={false}
-                        loading={isFirstRow ? 'eager' : 'lazy'}
-                        decoding="async"
-                        {...(isLcpImage ? { fetchpriority: 'high' } : {})}
+                        isFirstRow={isFirstRow}
+                        isLcpImage={isLcpImage}
                         className={mediaClass}
                       />
                     )}
@@ -647,8 +696,8 @@ export default function DriftingGallery({ rows = [] }) {
         type="button"
         onClick={handleNextSection}
         disabled={!canScrollNext}
-        aria-label="Scroll to next gallery row"
-        className={`fixed bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.5rem))] sm:bottom-6 left-1/2 -translate-x-1/2 z-20 inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-ink hover:text-ink-muted active:opacity-70 transition-all duration-200 ${
+        aria-label="Zur nächsten Galerie-Reihe scrollen"
+        className={`fixed bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.5rem))] sm:bottom-6 left-1/2 -translate-x-1/2 z-20 inline-flex items-center justify-center min-w-[44px] min-h-[44px] bg-white/85 backdrop-blur-sm border border-ink/15 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:bg-white text-ink hover:text-ink-muted active:opacity-70 transition-all duration-200 ${
           canScrollNext
             ? 'opacity-100 translate-y-0 cursor-pointer'
             : 'opacity-0 translate-y-2 pointer-events-none'

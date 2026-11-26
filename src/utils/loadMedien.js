@@ -41,6 +41,40 @@ function resolveCoverThumbMeta(publicUrl, naturalWidth, naturalHeight, publicMed
   };
 }
 
+function resolveDetailImageMeta(publicUrl, naturalWidth, publicMedienDir) {
+  const hash = getThumbHash(publicUrl);
+  const w = Number(naturalWidth) || 1800;
+  const gridW = Math.min(800, w);
+  const stageW = Math.min(1800, w);
+  const thumbsDir = path.join(publicMedienDir, '_thumbs');
+
+  const gridFile = `${hash}-800.webp`;
+  const stageFile = `${hash}-1800.webp`;
+  const hasGrid = fs.existsSync(path.join(thumbsDir, gridFile));
+  const hasStage = fs.existsSync(path.join(thumbsDir, stageFile));
+
+  const gridSrc = hasGrid ? `/medien/_thumbs/${gridFile}` : undefined;
+  const stageSrc = hasStage ? `/medien/_thumbs/${stageFile}` : gridSrc;
+
+  const byWidth = new Map();
+  if (hasGrid) {
+    byWidth.set(gridW, `/medien/_thumbs/${gridFile} ${gridW}w`);
+  }
+  if (hasStage) {
+    byWidth.set(stageW, `/medien/_thumbs/${stageFile} ${stageW}w`);
+  }
+
+  const stageSrcSet =
+    byWidth.size > 0
+      ? Array.from(byWidth.entries())
+          .sort((a, b) => a[0] - b[0])
+          .map(([, entry]) => entry)
+          .join(', ')
+      : undefined;
+
+  return { gridSrc, stageSrc, stageSrcSet };
+}
+
 function resolvePosterWebp(posterUrl, publicMedienDir) {
   if (!posterUrl) return undefined;
   const hash = getThumbHash(posterUrl);
@@ -326,6 +360,7 @@ const FALLBACK_MOBILE_COLLAGE_SLOTS = [
 const VIDEO_POSTERS = {
   'timon-editorial': '/media/poster-timon-editorial.jpg',
   'dbb-double-header': '/media/poster-dbb-double-header.jpg',
+  'dbb-double-header.mp4': '/media/poster-dbb-double-header.jpg',
   '1AE51C11-EAB2-4444-9140-345096CB874D.mp4': '/media/poster-jordanien-1.jpg',
   '6CC5F030-651C-4CD4-9473-7C6399B4878E.mp4': '/media/poster-jordanien-2.jpg',
   'copy_288C6509-9ED1-40B1-AB73-52A07E24EAEF.mp4': '/media/poster-nepal-1.jpg',
@@ -703,12 +738,28 @@ export function loadMedienProjects() {
   fs.mkdirSync(publicMedienDir, { recursive: true });
   const validRelPaths = new Set(collectedFiles.map((f) => f.relPath));
 
+  const pruneDotfilesInDir = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith('.')) {
+        fs.rmSync(path.join(dir, entry.name), { recursive: true, force: true });
+      }
+    }
+  };
+
   const cleanStaleFiles = (dir, relPrefix = '') => {
     if (!fs.existsSync(dir)) return;
     for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (!relPrefix && item.name === '_thumbs') continue;
-      const itemRel = relPrefix ? path.join(relPrefix, item.name) : item.name;
       const itemAbs = path.join(dir, item.name);
+      if (item.name.startsWith('.')) {
+        fs.rmSync(itemAbs, { recursive: true, force: true });
+        continue;
+      }
+      if (!relPrefix && item.name === '_thumbs') {
+        pruneDotfilesInDir(itemAbs);
+        continue;
+      }
+      const itemRel = relPrefix ? path.join(relPrefix, item.name) : item.name;
       if (item.isDirectory()) {
         cleanStaleFiles(itemAbs, itemRel);
         if (fs.readdirSync(itemAbs).length === 0) {
@@ -817,17 +868,30 @@ export function loadMedienProjects() {
       aspect: 'auto',
       startIndex: 0,
       meta: cat.meta,
-      images: sortedItems.map((item, imageIndex) => ({
-        src: item.src,
-        type: item.type,
-        poster: item.poster,
-        width: item.width,
-        height: item.height,
-        intrinsicAspect: item.intrinsicAspect,
-        aspect: 'auto',
-        caption: '',
-        index: imageIndex,
-      })),
+      images: sortedItems.map((item, imageIndex) => {
+        const detailMeta =
+          item.type === 'image'
+            ? resolveDetailImageMeta(item.src, item.width, publicMedienDir)
+            : { gridSrc: undefined, stageSrc: undefined, stageSrcSet: undefined };
+        const itemPosterWebp =
+          item.type === 'video' ? resolvePosterWebp(item.poster, publicMedienDir) : undefined;
+
+        return {
+          src: item.src,
+          type: item.type,
+          gridSrc: detailMeta.gridSrc,
+          stageSrc: detailMeta.stageSrc,
+          stageSrcSet: detailMeta.stageSrcSet,
+          poster: item.poster,
+          posterWebp: itemPosterWebp,
+          width: item.width,
+          height: item.height,
+          intrinsicAspect: item.intrinsicAspect,
+          aspect: 'auto',
+          caption: '',
+          index: imageIndex,
+        };
+      }),
     };
 
     if (cat.section === 'exhibition') {

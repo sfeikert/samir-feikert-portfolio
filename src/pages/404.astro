@@ -1,8 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-
-const pillClass =
-  'inline-flex items-center justify-center gap-1.5 min-h-[36px] sm:min-h-[34px] px-3.5 sm:px-4 py-1.5 font-sans font-normal text-[12px] sm:text-[13px] leading-none tracking-[0.01em] text-ink bg-white hover:bg-ink hover:text-white active:opacity-80 border border-ink/15 hover:border-ink rounded-full transition-colors duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)]';
+import SfMonogram from '../components/SfMonogram.jsx';
 ---
 
 <BaseLayout
@@ -12,15 +10,15 @@ const pillClass =
 >
   <div class="min-h-screen w-full bg-white text-ink flex flex-col justify-between">
     <header class="w-full max-w-3xl mx-auto px-6 sm:px-10 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4 flex items-center justify-between gap-4 border-b border-ink/10">
-      <a href="/" class={pillClass}>
+      <a href="/" class="sf-pill">
         ← Übersicht
       </a>
       <a
         href="/"
         aria-label="Zur Startseite"
-        class={`${pillClass} font-display uppercase tracking-[0.04em]`}
+        class="sf-pill"
       >
-        SF
+        <SfMonogram />
       </a>
     </header>
 
@@ -34,7 +32,7 @@ const pillClass =
           Die angeforderte Seite existiert nicht oder wurde verschoben.
         </p>
         <div class="pt-2">
-          <a href="/" class={pillClass}>
+          <a href="/" class="sf-pill">
             ← Zur Startseite
           </a>
         </div>

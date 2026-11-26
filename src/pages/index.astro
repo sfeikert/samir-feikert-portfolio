@@ -47,14 +47,35 @@ const lcpPreload = firstImageSlide
           : '(min-width: 1024px) 25vw, (min-width: 640px) 55vw, 80vw',
     }
   : null;
+const homeOgImage = firstImageSlide?.thumbSrc || firstImageSlide?.src || '/apple-touch-icon.png';
 const publicIdentity = {
   name: siteIdentity.name,
   subtitle: siteIdentity.subtitle,
   heroIntro: siteIdentity.heroIntro,
 };
+const homeJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Samir Feikert',
+  jobTitle: 'Fotograf',
+  description: siteIdentity.heroIntro,
+  url: 'https://samirfeikert.com/',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Düsseldorf',
+    addressCountry: 'DE',
+  },
+  sameAs: [siteIdentity.instagram?.url || 'https://www.instagram.com/samirfeikert/'],
+};
 ---
 
-<BaseLayout title="Samir Feikert — Photographer" preloadImage={lcpPreload}>
+<BaseLayout
+  title="Samir Feikert — Fotograf aus Düsseldorf"
+  description={siteIdentity.heroIntro}
+  ogImage={homeOgImage}
+  preloadImage={lcpPreload}
+  jsonLd={homeJsonLd}
+>
   <HeaderBar client:load identity={publicIdentity} exhibitionItems={activeExhibitionItems} />
   <main id="main-content">
     <DriftingGallery client:load rows={homeRows} />

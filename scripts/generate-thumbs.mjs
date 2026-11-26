@@ -16,7 +16,7 @@ function urlToPublicPath(publicUrl) {
   return path.join(publicDir, decoded);
 }
 
-async function ensureWebpThumb(srcAbsPath, destAbsPath, width) {
+async function ensureWebpThumb(srcAbsPath, destAbsPath, width, quality = 80) {
   if (!fs.existsSync(srcAbsPath)) return false;
 
   const srcStat = fs.statSync(srcAbsPath);
@@ -30,7 +30,7 @@ async function ensureWebpThumb(srcAbsPath, destAbsPath, width) {
   await sharp(srcAbsPath)
     .rotate()
     .resize({ width, withoutEnlargement: true })
-    .webp({ quality: 80, effort: 4 })
+    .webp({ quality, effort: 4 })
     .toFile(destAbsPath);
 
   return true;
@@ -48,6 +48,17 @@ async function main() {
   const tasks = [];
   const validFiles = new Set();
 
+  const queueThumb = (srcAbs, fileName, width, quality = 80) => {
+    if (validFiles.has(fileName)) return;
+    validFiles.add(fileName);
+    tasks.push({
+      srcAbs,
+      destAbs: path.join(thumbsDir, fileName),
+      width,
+      quality,
+    });
+  };
+
   const coverItems = [
     ...medienData.rows.flatMap((row) => row.slides),
     ...medienData.exhibitionItems,
@@ -60,18 +71,28 @@ async function main() {
       const widths = getThumbWidths(item.width, item.height);
 
       for (const w of widths) {
-        const fileName = `${hash}-${w}.webp`;
-        if (validFiles.has(fileName)) continue;
-        validFiles.add(fileName);
-        tasks.push({ srcAbs, destAbs: path.join(thumbsDir, fileName), width: w });
+        queueThumb(srcAbs, `${hash}-${w}.webp`, w, 80);
       }
     } else if (item.type === 'video' && item.poster) {
       const srcAbs = urlToPublicPath(item.poster);
       const hash = getThumbHash(item.poster);
-      const fileName = `poster-${hash}-600.webp`;
-      if (!validFiles.has(fileName)) {
-        validFiles.add(fileName);
-        tasks.push({ srcAbs, destAbs: path.join(thumbsDir, fileName), width: 600 });
+      queueThumb(srcAbs, `poster-${hash}-600.webp`, 600, 80);
+    }
+  }
+
+  for (const project of medienData.projects || []) {
+    for (const item of project.images || []) {
+      if (item.type === 'image' && item.src?.startsWith('/medien/')) {
+        const srcAbs = urlToPublicPath(item.src);
+        const hash = getThumbHash(item.src);
+        const naturalWidth = Number(item.width) || 1800;
+
+        queueThumb(srcAbs, `${hash}-800.webp`, Math.min(800, naturalWidth), 80);
+        queueThumb(srcAbs, `${hash}-1800.webp`, Math.min(1800, naturalWidth), 84);
+      } else if (item.type === 'video' && item.poster) {
+        const srcAbs = urlToPublicPath(item.poster);
+        const hash = getThumbHash(item.poster);
+        queueThumb(srcAbs, `poster-${hash}-600.webp`, 600, 80);
       }
     }
   }
@@ -82,14 +103,19 @@ async function main() {
   for (let i = 0; i < tasks.length; i += CONCURRENCY) {
     const batch = tasks.slice(i, i + CONCURRENCY);
     const results = await Promise.all(
-      batch.map((t) => ensureWebpThumb(t.srcAbs, t.destAbs, t.width))
+      batch.map((t) => ensureWebpThumb(t.srcAbs, t.destAbs, t.width, t.quality))
     );
     generated += results.filter(Boolean).length;
   }
 
-  // Prune stale thumbnails no longer referenced
+  // Prune macOS dotfiles (.DS_Store, ._*) and stale thumbnails no longer referenced
   let removed = 0;
   for (const entry of fs.readdirSync(thumbsDir, { withFileTypes: true })) {
+    if (entry.name.startsWith('.')) {
+      fs.rmSync(path.join(thumbsDir, entry.name), { recursive: true, force: true });
+      removed++;
+      continue;
+    }
     if (!entry.isFile()) continue;
     if (!validFiles.has(entry.name)) {
       fs.unlinkSync(path.join(thumbsDir, entry.name));
@@ -98,7 +124,7 @@ async function main() {
   }
 
   console.log(
-    `[thumbs] ${validFiles.size} WebP cover thumbnails ready (${generated} generated, ${removed} pruned).`
+    `[thumbs] ${validFiles.size} WebP derivatives ready (${generated} generated, ${removed} pruned).`
   );
 }
 
